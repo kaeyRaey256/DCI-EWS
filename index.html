@@ -1,2298 +1,2008 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DCI Early Warning System — Mood Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>DCI Mood Tracker — Schools & Learning Institutions</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  :root {
-    --teal: #1a7a7a;
-    --teal-light: #2a9d9d;
-    --teal-pale: rgba(26,122,122,0.12);
-    --cream: #f5f0e8;
-    --cream-dark: #e8e1d4;
-    --red: #8b1a1a;
-    --red-light: #b02020;
-    --bg: #0d1515;
-    --bg2: #111e1e;
-    --bg3: #152222;
-    --card: #172020;
-    --card2: #1c2828;
-    --border: rgba(26,122,122,0.2);
-    --border2: rgba(245,240,232,0.08);
-    --text: #f5f0e8;
-    --text-muted: rgba(245,240,232,0.5);
-    --text-dim: rgba(245,240,232,0.25);
-    --happy: #4ade80;
-    --positive: #86efac;
-    --neutral: #fbbf24;
-    --bored: #f59e0b;
-    --sick: #fb923c;
-    --stressed: #f97316;
-    --angry: #ef4444;
-    --sad: #60a5fa;
-    --depressed: #3b82f6;
-    --font-display: 'Playfair Display', Georgia, serif;
-    --font-body: 'DM Sans', sans-serif;
-    --font-mono: 'DM Mono', monospace;
-    --radius: 16px;
-    --radius-sm: 10px;
-    --shadow: 0 8px 40px rgba(0,0,0,0.4);
-    --glow: 0 0 40px rgba(26,122,122,0.15);
-  }
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    font-family: var(--font-body);
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-    position: relative;
-  }
-
-  /* Ambient background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background:
-      radial-gradient(ellipse 60% 50% at 10% 20%, rgba(26,122,122,0.08) 0%, transparent 70%),
-      radial-gradient(ellipse 40% 40% at 90% 80%, rgba(139,26,26,0.06) 0%, transparent 70%),
-      radial-gradient(ellipse 80% 60% at 50% 100%, rgba(26,122,122,0.04) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* Subtle grid texture */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(245,240,232,0.015) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(245,240,232,0.015) 1px, transparent 1px);
-    background-size: 48px 48px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* ── SIDEBAR ── */
-  .sidebar {
-    position: fixed;
-    left: 0; top: 0; bottom: 0;
-    width: 260px;
-    background: var(--bg2);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    z-index: 100;
-    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
-  }
-
-  .sidebar-logo {
-    padding: 28px 24px 20px;
-    border-bottom: 1px solid var(--border2);
-  }
-
-  .logo-badge {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 6px;
-  }
-
-  .logo-icon {
-    width: 38px; height: 38px;
-    background: linear-gradient(135deg, var(--teal), var(--teal-light));
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    box-shadow: 0 4px 16px rgba(26,122,122,0.35);
-    flex-shrink: 0;
-    animation: pulse-glow 3s ease-in-out infinite;
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 4px 16px rgba(26,122,122,0.35); }
-    50% { box-shadow: 0 4px 28px rgba(26,122,122,0.6); }
-  }
-
-  .logo-text {
-    font-family: var(--font-display);
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text);
-    line-height: 1.1;
-  }
-
-  .logo-sub {
-    font-size: 10px;
-    color: var(--teal-light);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    font-weight: 500;
-  }
-
-  .sidebar-section {
-    padding: 20px 16px 8px;
-  }
-
-  .sidebar-label {
-    font-size: 10px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    font-weight: 600;
-    padding: 0 8px;
-    margin-bottom: 6px;
-  }
-
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin-bottom: 2px;
-    border: 1px solid transparent;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .nav-item::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, var(--teal-pale), transparent);
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-
-  .nav-item:hover::before { opacity: 1; }
-  .nav-item:hover { border-color: var(--border); }
-
-  .nav-item.active {
-    background: var(--teal-pale);
-    border-color: rgba(26,122,122,0.35);
-  }
-
-  .nav-item.active .nav-icon { color: var(--teal-light); }
-  .nav-item.active .nav-label { color: var(--text); font-weight: 600; }
-
-  .nav-icon {
-    font-size: 18px;
-    width: 22px;
-    text-align: center;
-    color: var(--text-muted);
-    transition: color 0.2s;
-    flex-shrink: 0;
-  }
-
-  .nav-label {
-    font-size: 14px;
-    color: var(--text-muted);
-    font-weight: 400;
-    transition: color 0.2s;
-  }
-
-  .nav-badge {
-    margin-left: auto;
-    background: var(--red);
-    color: white;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 20px;
-    animation: badge-pop 2s ease-in-out infinite;
-  }
-
-  @keyframes badge-pop {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.08); }
-  }
-
-  .sidebar-bottom {
-    margin-top: auto;
-    padding: 16px;
-    border-top: 1px solid var(--border2);
-  }
-
-  .school-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px;
-    background: var(--card);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-  }
-
-  .school-avatar {
-    width: 34px; height: 34px;
-    background: linear-gradient(135deg, var(--teal) 0%, var(--red) 100%);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px; flex-shrink: 0;
-  }
-
-  .school-name { font-size: 12px; font-weight: 600; color: var(--text); }
-  .school-role { font-size: 10px; color: var(--text-muted); }
-
-  /* Hamburger */
-  .hamburger {
-    display: none;
-    position: fixed;
-    top: 16px; left: 16px;
-    z-index: 200;
-    background: var(--card2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    width: 42px; height: 42px;
-    align-items: center; justify-content: center;
-    cursor: pointer;
-    flex-direction: column; gap: 5px;
-  }
-
-  .hamburger span {
-    display: block;
-    width: 18px; height: 2px;
-    background: var(--text);
-    border-radius: 2px;
-    transition: all 0.3s ease;
-  }
-
-  .sidebar-overlay {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 99;
-    backdrop-filter: blur(2px);
-  }
-
-  /* ── MAIN ── */
-  .main {
-    margin-left: 260px;
-    min-height: 100vh;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* ── TOP BAR ── */
-  .topbar {
-    position: sticky; top: 0;
-    background: rgba(13,21,21,0.85);
-    backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--border2);
-    padding: 16px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    z-index: 50;
-    gap: 16px;
-  }
-
-  .topbar-left h1 {
-    font-family: var(--font-display);
-    font-size: clamp(20px, 2.5vw, 28px);
-    font-weight: 700;
-    color: var(--text);
-    line-height: 1.1;
-  }
-
-  .topbar-left p {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-top: 2px;
-  }
-
-  .topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-shrink: 0;
-  }
-
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    font-family: var(--font-body);
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s ease;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-
-  .btn-primary {
-    background: linear-gradient(135deg, var(--teal), var(--teal-light));
-    color: white;
-    box-shadow: 0 4px 20px rgba(26,122,122,0.3);
-  }
-
-  .btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 28px rgba(26,122,122,0.45);
-  }
-
-  .btn-ghost {
-    background: var(--card);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
-  .btn-ghost:hover {
-    background: var(--card2);
-    border-color: var(--teal);
-  }
-
-  .live-dot {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 12px;
-    color: var(--text-muted);
-    padding: 8px 14px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-  }
-
-  .live-dot::before {
-    content: '';
-    width: 7px; height: 7px;
-    background: var(--happy);
-    border-radius: 50%;
-    animation: blink 1.5s ease-in-out infinite;
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.8); }
-  }
-
-  /* ── CONTENT ── */
-  .content {
-    padding: 28px 32px 48px;
-  }
-
-  /* ── PAGES ── */
-  .page { display: none; animation: fade-in 0.4s ease; }
-  .page.active { display: block; }
-
-  @keyframes fade-in {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* ── UPLOAD PAGE ── */
-  .upload-hero {
-    text-align: center;
-    padding: 40px 20px 32px;
-  }
-
-  .upload-hero h2 {
-    font-family: var(--font-display);
-    font-size: clamp(28px, 4vw, 48px);
-    font-weight: 900;
-    line-height: 1.1;
-    margin-bottom: 14px;
-    background: linear-gradient(135deg, var(--text) 0%, var(--teal-light) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .upload-hero p {
-    font-size: clamp(15px, 2vw, 18px);
-    color: var(--text-muted);
-    max-width: 560px;
-    margin: 0 auto;
-    line-height: 1.6;
-  }
-
-  .upload-zone {
-    border: 2px dashed rgba(26,122,122,0.4);
-    border-radius: var(--radius);
-    padding: 56px 32px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    background: var(--card);
-    overflow: hidden;
-    margin: 0 auto;
-    max-width: 600px;
-  }
-
-  .upload-zone::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(26,122,122,0.06), transparent);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-
-  .upload-zone:hover::before { opacity: 1; }
-  .upload-zone:hover { border-color: var(--teal-light); }
-
-  .upload-icon {
-    font-size: 52px;
-    margin-bottom: 18px;
-    display: block;
-    animation: float 3s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
-  }
-
-  .upload-zone h3 {
-    font-family: var(--font-display);
-    font-size: 22px;
-    font-weight: 700;
-    margin-bottom: 8px;
-    color: var(--text);
-  }
-
-  .upload-zone p {
-    font-size: 14px;
-    color: var(--text-muted);
-    margin-bottom: 20px;
-  }
-
-  .divider-text {
-    font-size: 12px;
-    color: var(--text-dim);
-    letter-spacing: 0.1em;
-    margin: 20px 0;
-    position: relative;
-  }
-
-  .divider-text::before, .divider-text::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    width: 35%;
-    height: 1px;
-    background: var(--border2);
-  }
-  .divider-text::before { left: 0; }
-  .divider-text::after { right: 0; }
-
-  .simulate-btn {
-    background: linear-gradient(135deg, var(--teal), var(--teal-light));
-    color: white;
-    border: none;
-    padding: 14px 32px;
-    border-radius: 50px;
-    font-size: 16px;
-    font-weight: 600;
-    font-family: var(--font-body);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 24px rgba(26,122,122,0.35);
-  }
-
-  .simulate-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 36px rgba(26,122,122,0.5);
-  }
-
-  .simulate-btn:active { transform: translateY(0); }
-
-  /* ── PROCESSING OVERLAY ── */
-  .processing-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(10,16,16,0.95);
-    backdrop-filter: blur(20px);
-    z-index: 500;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 32px;
-  }
-
-  .processing-overlay.visible { display: flex; }
-
-  .processing-ring {
-    width: 100px; height: 100px;
-    border: 3px solid var(--border);
-    border-top-color: var(--teal-light);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 28px;
-    position: relative;
-  }
-
-  .processing-ring::after {
-    content: '';
-    position: absolute;
-    inset: 8px;
-    border: 2px solid var(--border);
-    border-bottom-color: var(--red-light);
-    border-radius: 50%;
-    animation: spin 1.5s linear infinite reverse;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .processing-title {
-    font-family: var(--font-display);
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 10px;
-  }
-
-  .processing-step {
-    font-size: 15px;
-    color: var(--teal-light);
-    font-family: var(--font-mono);
-    margin-bottom: 28px;
-    min-height: 22px;
-  }
-
-  .processing-bar-wrap {
-    width: 320px;
-    max-width: 80vw;
-    height: 4px;
-    background: var(--border2);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .processing-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--teal), var(--teal-light));
-    border-radius: 4px;
-    width: 0%;
-    transition: width 0.4s ease;
-    box-shadow: 0 0 12px rgba(26,122,122,0.6);
-  }
-
-  /* ── STATS GRID ── */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-
-  .stat-card {
-    background: var(--card);
-    border: 1px solid var(--border2);
-    border-radius: var(--radius);
-    padding: 22px 20px;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-    animation: card-in 0.5s ease both;
-  }
-
-  .stat-card:hover {
-    transform: translateY(-3px);
-    border-color: var(--border);
-    box-shadow: var(--shadow);
-  }
-
-  @keyframes card-in {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .stat-card:nth-child(1) { animation-delay: 0.05s; }
-  .stat-card:nth-child(2) { animation-delay: 0.1s; }
-  .stat-card:nth-child(3) { animation-delay: 0.15s; }
-  .stat-card:nth-child(4) { animation-delay: 0.2s; }
-
-  .stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    border-radius: var(--radius) var(--radius) 0 0;
-  }
-
-  .stat-card.green::before { background: linear-gradient(90deg, var(--happy), var(--positive)); }
-  .stat-card.amber::before { background: linear-gradient(90deg, var(--neutral), var(--bored)); }
-  .stat-card.red::before { background: linear-gradient(90deg, var(--angry), var(--red)); }
-  .stat-card.blue::before { background: linear-gradient(90deg, var(--teal), var(--teal-light)); }
-
-  .stat-label {
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    font-weight: 600;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .stat-value {
-    font-family: var(--font-display);
-    font-size: clamp(28px, 3vw, 40px);
-    font-weight: 700;
-    line-height: 1;
-    margin-bottom: 6px;
-  }
-
-  .stat-delta {
-    font-size: 12px;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .delta-up { color: var(--happy); }
-  .delta-down { color: var(--red); }
-  .delta-same { color: var(--text-muted); }
-
-  /* ── 2-COL LAYOUT ── */
-  .two-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 24px;
-  }
-
-  .three-col {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 20px;
-    margin-bottom: 24px;
-  }
-
-  /* ── CARD ── */
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border2);
-    border-radius: var(--radius);
-    padding: 24px;
-    position: relative;
-    overflow: hidden;
-    animation: card-in 0.5s ease both;
-  }
-
-  .card:hover { border-color: var(--border); }
-
-  .card-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    gap: 12px;
-  }
-
-  .card-title {
-    font-family: var(--font-display);
-    font-size: clamp(16px, 2vw, 20px);
-    font-weight: 700;
-    color: var(--text);
-    line-height: 1.2;
-  }
-
-  .card-sub {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-top: 3px;
-  }
-
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .chip-teal { background: rgba(26,122,122,0.2); color: var(--teal-light); border: 1px solid rgba(26,122,122,0.3); }
-  .chip-red { background: rgba(139,26,26,0.2); color: #e05050; border: 1px solid rgba(139,26,26,0.3); }
-  .chip-green { background: rgba(74,222,128,0.1); color: var(--happy); border: 1px solid rgba(74,222,128,0.2); }
-  .chip-amber { background: rgba(251,191,36,0.1); color: var(--neutral); border: 1px solid rgba(251,191,36,0.2); }
-
-  /* ── CHART WRAPPER ── */
-  .chart-wrap { position: relative; width: 100%; }
-
-  /* ── MOOD LEGEND ── */
-  .mood-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 16px;
-  }
-
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-
-  .legend-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  /* ── STUDENT LIST ── */
-  .student-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .student-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    background: var(--card2);
-    border-radius: var(--radius-sm);
-    border: 1px solid transparent;
-    transition: all 0.2s;
-    cursor: pointer;
-    animation: card-in 0.4s ease both;
-  }
-
-  .student-row:hover {
-    border-color: var(--border);
-    transform: translateX(3px);
-  }
-
-  .student-avatar {
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px;
-    font-weight: 700;
-    flex-shrink: 0;
-    position: relative;
-  }
-
-  .student-avatar::after {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    transition: border-color 0.2s;
-  }
-
-  .student-row:hover .student-avatar::after {
-    border-color: var(--teal-light);
-  }
-
-  .student-name {
-    flex: 1;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text);
-  }
-
-  .student-class {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-top: 1px;
-  }
-
-  .mood-dots-mini {
-    display: flex;
-    gap: 3px;
-    align-items: center;
-  }
-
-  .mood-dot-mini {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .alert-flag {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-
-  .flag-red { background: rgba(139,26,26,0.25); color: #e05050; }
-  .flag-amber { background: rgba(251,191,36,0.15); color: var(--neutral); }
-  .flag-green { background: rgba(74,222,128,0.1); color: var(--happy); }
-
-  /* ── ALERT CARDS ── */
-  .alert-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .alert-card {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    padding: 14px 16px;
-    border-radius: var(--radius-sm);
-    border-left: 4px solid;
-    animation: slide-in 0.4s ease both;
-  }
-
-  @keyframes slide-in {
-    from { opacity: 0; transform: translateX(-10px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-
-  .alert-card.critical { background: rgba(139,26,26,0.12); border-color: var(--red); }
-  .alert-card.warning { background: rgba(251,191,36,0.08); border-color: var(--neutral); }
-  .alert-card.info { background: rgba(26,122,122,0.1); border-color: var(--teal); }
-
-  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
-
-  .alert-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 3px;
-  }
-
-  .alert-body {
-    font-size: 12px;
-    color: var(--text-muted);
-    line-height: 1.5;
-  }
-
-  .alert-time {
-    font-size: 10px;
-    color: var(--text-dim);
-    font-family: var(--font-mono);
-    margin-top: 5px;
-  }
-
-  /* ── PROGRESS BARS ── */
-  .progress-item {
-    margin-bottom: 16px;
-  }
-
-  .progress-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 7px;
-  }
-
-  .progress-label { font-size: 14px; color: var(--text); font-weight: 500; }
-  .progress-val { font-size: 14px; font-weight: 700; font-family: var(--font-mono); }
-
-  .progress-bar {
-    height: 8px;
-    background: var(--bg3);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    border-radius: 8px;
-    transition: width 1.2s cubic-bezier(0.34,1.56,0.64,1);
-    width: 0%;
-  }
-
-  /* ── UGANDA MAP ── */
-  .map-container {
-    position: relative;
-    background: var(--bg3);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    min-height: 300px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .map-svg { width: 100%; max-height: 320px; }
-
-  /* ── DISTRICT HEATMAP ── */
-  .district-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-  }
-
-  .district-cell {
-    padding: 12px;
-    border-radius: 8px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: 1px solid transparent;
-    animation: card-in 0.4s ease both;
-  }
-
-  .district-cell:hover { transform: scale(1.04); border-color: rgba(255,255,255,0.2); }
-
-  .district-name { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.85); }
-  .district-pct { font-size: 18px; font-weight: 700; color: white; font-family: var(--font-display); }
-  .district-sub { font-size: 10px; color: rgba(255,255,255,0.6); }
-
-  .heat-critical { background: rgba(139,26,26,0.65); }
-  .heat-high { background: rgba(239,68,68,0.45); }
-  .heat-medium { background: rgba(251,191,36,0.35); }
-  .heat-low { background: rgba(26,122,122,0.4); }
-  .heat-good { background: rgba(74,222,128,0.3); }
-
-  /* ── PATTERN BADGE ── */
-  .pattern-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 18px;
-    border-radius: 50px;
-    font-size: 14px;
-    font-weight: 700;
-    margin-bottom: 16px;
-  }
-
-  .pattern-stable { background: rgba(74,222,128,0.12); color: var(--happy); border: 1.5px solid rgba(74,222,128,0.3); }
-  .pattern-fluctuating { background: rgba(251,191,36,0.12); color: var(--neutral); border: 1.5px solid rgba(251,191,36,0.3); }
-  .pattern-declining { background: rgba(139,26,26,0.15); color: #e05050; border: 1.5px solid rgba(139,26,26,0.35); animation: pulse-alert 2s ease infinite; }
-
-  @keyframes pulse-alert {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(139,26,26,0); }
-    50% { box-shadow: 0 0 0 6px rgba(139,26,26,0.15); }
-  }
-
-  /* ── SECTION HEADER ── */
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
-
-  .section-title {
-    font-family: var(--font-display);
-    font-size: clamp(18px, 2.5vw, 24px);
-    font-weight: 700;
-  }
-
-  /* ── SCHOOL TABLE ── */
-  .school-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .school-table th {
-    text-align: left;
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    font-weight: 600;
-    padding: 0 12px 12px;
-    border-bottom: 1px solid var(--border2);
-  }
-
-  .school-table td {
-    padding: 14px 12px;
-    font-size: 14px;
-    border-bottom: 1px solid var(--border2);
-    transition: background 0.2s;
-  }
-
-  .school-table tr:hover td { background: rgba(26,122,122,0.04); }
-  .school-table tr:last-child td { border-bottom: none; }
-
-  .trend-bar-mini {
-    display: flex;
-    gap: 2px;
-    align-items: flex-end;
-    height: 20px;
-  }
-
-  .trend-bar-mini span {
-    width: 4px;
-    border-radius: 2px;
-    background: var(--teal);
-    display: block;
-    transition: height 0.6s ease;
-  }
-
-  /* ── INSIGHT BOX ── */
-  .insight-box {
-    background: linear-gradient(135deg, rgba(26,122,122,0.1), rgba(26,122,122,0.04));
-    border: 1px solid rgba(26,122,122,0.25);
-    border-radius: var(--radius);
-    padding: 20px;
-    margin-bottom: 24px;
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-    animation: card-in 0.5s ease both;
-  }
-
-  .insight-icon { font-size: 26px; flex-shrink: 0; }
-
-  .insight-title {
-    font-family: var(--font-display);
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 6px;
-  }
-
-  .insight-text {
-    font-size: 14px;
-    color: var(--text-muted);
-    line-height: 1.6;
-  }
-
-  /* ── TABS ── */
-  .tabs {
-    display: flex;
-    gap: 4px;
-    background: var(--bg3);
-    border-radius: 10px;
-    padding: 4px;
-    margin-bottom: 24px;
-    overflow-x: auto;
-  }
-
-  .tab {
-    flex: 1;
-    min-width: fit-content;
-    padding: 10px 18px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-    white-space: nowrap;
-    border: none;
-    background: none;
-    font-family: var(--font-body);
-  }
-
-  .tab.active {
-    background: var(--card2);
-    color: var(--text);
-    font-weight: 600;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  }
-
-  /* ── METRIC ROW ── */
-  .metric-row {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-  }
-
-  .metric-pill {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 18px;
-    background: var(--card);
-    border: 1px solid var(--border2);
-    border-radius: 50px;
-    flex: 1;
-    min-width: 140px;
-    transition: all 0.2s;
-  }
-
-  .metric-pill:hover { border-color: var(--border); transform: translateY(-2px); }
-
-  .metric-pill-dot {
-    width: 12px; height: 12px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .metric-pill-label { font-size: 12px; color: var(--text-muted); }
-  .metric-pill-val { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin-left: auto; }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 1100px) {
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .two-col { grid-template-columns: 1fr; }
-    .three-col { grid-template-columns: 1fr; }
-  }
-
-  @media (max-width: 768px) {
-    .sidebar {
-      transform: translateX(-100%);
-    }
-    .sidebar.open { transform: translateX(0); }
-    .sidebar-overlay.open { display: block; }
-    .hamburger { display: flex; }
-    .main { margin-left: 0; }
-    .topbar { padding: 14px 20px 14px 68px; }
-    .content { padding: 20px 16px 40px; }
-    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-    .district-grid { grid-template-columns: repeat(2, 1fr); }
-    .topbar-right .live-dot span { display: none; }
-  }
-
-  @media (max-width: 480px) {
-    .stats-grid { grid-template-columns: 1fr 1fr; }
-    .stat-value { font-size: 26px; }
-  }
-
-  /* ── SCROLL ── */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--teal); }
-
-  /* Hide scrollbar on tabs */
-  .tabs::-webkit-scrollbar { display: none; }
-
-  /* ── EMPTY STATE ── */
-  .empty-state {
-    text-align: center;
-    padding: 60px 32px;
-    color: var(--text-muted);
-  }
-  .empty-state-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.6; }
-  .empty-state h3 { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
-  .empty-state p { font-size: 14px; line-height: 1.6; }
-
-  /* ── TEACHER CARD ── */
-  .teacher-card {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 16px;
-    background: var(--card2);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border2);
-    transition: all 0.2s;
-    cursor: pointer;
-  }
-  .teacher-card:hover { border-color: var(--border); transform: translateY(-1px); }
-  .teacher-ava {
-    width: 42px; height: 42px;
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; font-weight: 700; flex-shrink: 0;
-  }
-  .teacher-info { flex: 1; }
-  .teacher-name { font-size: 14px; font-weight: 600; }
-  .teacher-role { font-size: 11px; color: var(--text-muted); }
-  .teacher-trend {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 6px;
-  }
-
-  /* ── WELL-BEING ── */
-  .wellbeing-ring-wrap {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    position: relative;
-  }
-  .wellbeing-center-text {
-    position: absolute;
-    text-align: center;
-  }
-  .wellbeing-pct {
-    font-family: var(--font-display);
-    font-size: 32px;
-    font-weight: 900;
-    color: var(--text);
-    display: block;
-    line-height: 1;
-  }
-  .wellbeing-lbl {
-    font-size: 11px;
-    color: var(--text-muted);
-    letter-spacing: 0.08em;
-  }
-
-  /* Page transition shimmer on load */
-  .shimmer {
-    background: linear-gradient(90deg, transparent 0%, rgba(26,122,122,0.08) 50%, transparent 100%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-  }
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
+/* ══════════════════════════════════════════
+   CSS VARIABLES — LIGHT + DARK THEMES
+══════════════════════════════════════════ */
+[data-theme="light"] {
+  --bg:          #faf7f2;
+  --bg2:         #f3ede3;
+  --bg3:         #ede4d3;
+  --surface:     #ffffff;
+  --surface2:    #fdf9f4;
+  --border:      #ddd0b8;
+  --border2:     rgba(200,170,128,0.35);
+  --ink:         #1c1a16;
+  --ink-mid:     #3d3830;
+  --ink-light:   #6b6255;
+  --ink-faint:   #9e9285;
+  --ink-ghost:   rgba(28,26,22,0.05);
+  --teal:        #1a7a7a;
+  --teal-light:  #2a9d8f;
+  --teal-pale:   rgba(26,122,122,0.10);
+  --teal-wash:   rgba(26,122,122,0.05);
+  --sand:        #c8aa80;
+  --sand-light:  #e2cda8;
+  --cream:       #f5efe4;
+  --shadow-sm:   0 2px 12px rgba(28,26,22,0.07);
+  --shadow-md:   0 4px 24px rgba(28,26,22,0.10);
+  --shadow-lg:   0 8px 40px rgba(28,26,22,0.13);
+  --topbar-bg:   rgba(250,247,242,0.92);
+  --overlay:     rgba(28,26,22,0.45);
+}
+
+[data-theme="dark"] {
+  --bg:          #111816;
+  --bg2:         #161f1e;
+  --bg3:         #1c2826;
+  --surface:     #1e2826;
+  --surface2:    #243230;
+  --border:      rgba(26,122,122,0.22);
+  --border2:     rgba(245,240,232,0.08);
+  --ink:         #f0ebe0;
+  --ink-mid:     #d4cab8;
+  --ink-light:   #a09280;
+  --ink-faint:   #6e6258;
+  --ink-ghost:   rgba(245,240,232,0.04);
+  --teal:        #2ab0a0;
+  --teal-light:  #38c9b6;
+  --teal-pale:   rgba(42,176,160,0.14);
+  --teal-wash:   rgba(42,176,160,0.06);
+  --sand:        #c8aa80;
+  --sand-light:  #e2cda8;
+  --cream:       #2a3432;
+  --shadow-sm:   0 2px 12px rgba(0,0,0,0.3);
+  --shadow-md:   0 4px 24px rgba(0,0,0,0.4);
+  --shadow-lg:   0 8px 40px rgba(0,0,0,0.5);
+  --topbar-bg:   rgba(17,24,22,0.92);
+  --overlay:     rgba(0,0,0,0.65);
+}
+
+/* ══════════════════════════════════════════
+   MOOD COLOUR SYSTEM — CORRECTED
+══════════════════════════════════════════ */
+:root {
+  --mood-happy:     #f5c518;  /* Golden Yellow  */
+  --mood-positive:  #27ae60;  /* Green          */
+  --mood-neutral:   #64b5f6;  /* Light Blue     */
+  --mood-sick:      #8d6e63;  /* Brown          */
+  --mood-stressed:  #f57c00;  /* Orange         */
+  --mood-angry:     #e53935;  /* Red            */
+  --mood-sad:       #e91e8c;  /* Pink           */
+  --mood-depressed: #263238;  /* Near-Black     */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body:    'Plus Jakarta Sans', sans-serif;
+  --font-mono:    'DM Mono', monospace;
+  --radius:       18px;
+  --radius-sm:    12px;
+  --radius-xs:    8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.35s ease, color 0.35s ease;
+}
+
+/* ══════════════════════════════════════════
+   PUZZLE PIECE SVG MOTIF (inline SVG pattern)
+══════════════════════════════════════════ */
+.puzzle-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.045;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20 h15 q2-8 8-8 q6 0 8 8 h15 v15 q8 2 8 8 q0 6-8 8 v15 h-15 q-2 8-8 8 q-6 0-8-8 h-15 v-15 q-8-2-8-8 q0-6 8-8 z' fill='none' stroke='%231a7a7a' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-size: 80px 80px;
+}
+
+.african-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.06;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%231a7a7a' stroke-width='1.2'%3E%3Cpolygon points='30,5 55,52 5,52'/%3E%3Cpolygon points='30,16 46,44 14,44'/%3E%3Cline x1='30' y1='5' x2='30' y2='55'/%3E%3Cline x1='5' y1='30' x2='55' y2='30'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 60px 60px;
+}
+
+/* ══════════════════════════════════════════
+   ONBOARDING
+══════════════════════════════════════════ */
+#onboarding {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  z-index: 9999;
+  overflow-y: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 20px 60px;
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+#onboarding.exit { opacity: 0; transform: scale(1.04); pointer-events: none; }
+
+.ob-wrap {
+  width: 100%; max-width: 560px;
+  animation: rise-in 0.7s cubic-bezier(0.34,1.3,0.64,1) both;
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(36px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Pattern strip at top */
+.ob-pattern-strip {
+  height: 8px;
+  border-radius: 8px 8px 0 0;
+  background: repeating-linear-gradient(90deg,
+    var(--teal) 0px,       var(--teal) 14px,
+    var(--mood-happy) 14px,var(--mood-happy) 22px,
+    var(--mood-positive) 22px,var(--mood-positive) 32px,
+    var(--sand) 32px,      var(--sand) 40px,
+    var(--mood-sad) 40px,  var(--mood-sad) 50px,
+    var(--teal-light) 50px,var(--teal-light) 60px,
+    var(--mood-angry) 60px,var(--mood-angry) 70px,
+    var(--sand-light) 70px,var(--sand-light) 80px
+  );
+}
+
+.ob-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.ob-hero {
+  background: linear-gradient(140deg, var(--teal) 0%, var(--teal-light) 55%, #3ecdb8 100%);
+  padding: 34px 34px 26px;
+  position: relative; overflow: hidden;
+}
+.ob-hero .puzzle-bg { opacity: 0.12; }
+.ob-hero-inner { position: relative; z-index: 1; }
+.ob-brand { display: flex; align-items: center; gap: 11px; margin-bottom: 18px; }
+.ob-brand-mark {
+  width: 42px; height: 42px;
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; backdrop-filter: blur(8px);
+  animation: mark-pulse 3.5s ease-in-out infinite;
+}
+@keyframes mark-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+  50%      { box-shadow: 0 0 0 8px rgba(255,255,255,0.12); }
+}
+.ob-brand-text .name { font-family: var(--font-display); font-size: 21px; font-weight: 700; color: white; letter-spacing: 0.04em; }
+.ob-brand-text .tag  { font-size: 10px; color: rgba(255,255,255,0.7); letter-spacing: 0.14em; text-transform: uppercase; margin-top: 1px; }
+
+.ob-title { font-family: var(--font-display); font-size: clamp(24px,4vw,36px); font-weight: 700; color: white; line-height: 1.15; margin-bottom: 10px; }
+.ob-title em { font-style: italic; opacity: 0.85; }
+.ob-desc { font-size: 14px; color: rgba(255,255,255,0.75); line-height: 1.65; }
+
+.ob-body { padding: 28px 34px 34px; }
+.ob-step-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--teal); margin-bottom: 18px;
+  display: flex; align-items: center; gap: 8px;
+}
+.ob-step-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* Steps */
+.ob-step { display: none; animation: rise-in 0.4s ease both; }
+.ob-step.active { display: block; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 7px; }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%;
+  padding: 13px 15px;
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body); font-size: 15px; color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  appearance: none;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  border-color: var(--teal); background: var(--surface);
+  box-shadow: 0 0 0 3px var(--teal-pale);
+}
+.form-group input::placeholder, .form-group textarea::placeholder { color: var(--ink-faint); }
+.form-group textarea { resize: vertical; min-height: 72px; }
+
+.privacy-note {
+  background: var(--teal-wash);
+  border: 1.5px solid var(--teal-pale);
+  border-radius: var(--radius-sm);
+  padding: 12px 15px;
+  font-size: 13px; color: var(--ink-light);
+  line-height: 1.55; margin-bottom: 18px;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.privacy-note .pn-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+.ob-nav { display: flex; gap: 10px; margin-top: 6px; }
+.ob-btn-primary {
+  flex: 1; padding: 15px;
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  color: white; border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body); font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: all 0.22s ease;
+  position: relative; overflow: hidden; letter-spacing: 0.02em;
+}
+.ob-btn-primary::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.15),transparent); opacity: 0; transition: opacity 0.2s; }
+.ob-btn-primary:hover::after { opacity: 1; }
+.ob-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(26,122,122,0.38); }
+.ob-btn-back {
+  padding: 15px 20px;
+  background: var(--bg2); color: var(--ink-light);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body); font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.ob-btn-back:hover { background: var(--bg3); }
+
+.step-dots { display: flex; gap: 7px; justify-content: center; margin-top: 18px; }
+.step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: all 0.3s ease; }
+.step-dot.active { background: var(--teal); transform: scale(1.3); }
+.step-dot.done   { background: var(--teal-light); }
+
+/* ══════════════════════════════════════════
+   MAIN APP
+══════════════════════════════════════════ */
+#app { display: none; opacity: 0; transition: opacity 0.5s ease; }
+#app.visible { opacity: 1; }
+
+/* ══════════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════════ */
+.sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0;
+  width: 262px;
+  background: var(--surface);
+  border-right: 1.5px solid var(--border);
+  display: flex; flex-direction: column;
+  z-index: 100;
+  transition: transform 0.32s cubic-bezier(0.4,0,0.2,1), background 0.35s, border-color 0.35s;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.sidebar-top-strip {
+  height: 5px;
+  background: repeating-linear-gradient(90deg,
+    var(--teal) 0px,          var(--teal) 12px,
+    var(--mood-happy) 12px,   var(--mood-happy) 20px,
+    var(--mood-positive) 20px,var(--mood-positive) 30px,
+    var(--sand) 30px,         var(--sand) 38px,
+    var(--mood-angry) 38px,   var(--mood-angry) 46px,
+    var(--teal-light) 46px,   var(--teal-light) 56px
+  );
+}
+
+.sidebar-head { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+.sb-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.sb-mark {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(26,122,122,0.28);
+  animation: mark-pulse 4s ease-in-out infinite;
+}
+.sb-name { font-family: var(--font-display); font-size: 19px; font-weight: 700; color: var(--ink); }
+.sb-sub  { font-size: 10px; color: var(--ink-faint); letter-spacing: 0.12em; text-transform: uppercase; }
+
+.sb-user-card {
+  background: var(--bg2);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex; align-items: center; gap: 10px;
+  transition: background 0.2s;
+}
+.sb-user-ava {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--teal), var(--sand));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: white; flex-shrink: 0;
+}
+.sb-user-id   { font-size: 13px; font-weight: 700; color: var(--ink); font-family: var(--font-mono); }
+.sb-user-inst { font-size: 11px; color: var(--ink-faint); }
+.sb-mode-chip {
+  margin-left: auto; font-size: 10px; font-weight: 700;
+  padding: 3px 8px; border-radius: 20px; flex-shrink: 0; letter-spacing: 0.04em;
+}
+.mode-student { background: var(--teal-pale); color: var(--teal); border: 1px solid rgba(26,122,122,0.2); }
+.mode-counsellor { background: rgba(200,170,128,0.2); color: #7a5f30; border: 1px solid rgba(200,170,128,0.35); }
+.mode-admin { background: rgba(229,57,53,0.1); color: #c0392b; border: 1px solid rgba(229,57,53,0.2); }
+
+.sidebar-nav { flex: 1; padding: 14px 12px; overflow-y: auto; }
+.nav-sec-lbl {
+  font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--ink-faint); font-weight: 700;
+  padding: 0 8px; margin: 12px 0 5px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 11px;
+  border-radius: 10px; cursor: pointer;
+  transition: all 0.18s ease; margin-bottom: 2px;
+  border: 1.5px solid transparent; position: relative; overflow: hidden;
+}
+.nav-item::before {
+  content: '';
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 0; background: var(--teal);
+  border-radius: 0 3px 3px 0; transition: height 0.2s ease;
+}
+.nav-item:hover { background: var(--bg2); }
+.nav-item:hover::before { height: 55%; }
+.nav-item.active { background: var(--teal-pale); border-color: rgba(26,122,122,0.2); }
+.nav-item.active::before { height: 60%; }
+.nav-item.active .nav-lbl { color: var(--teal); font-weight: 700; }
+.nav-item.active .nav-ico { opacity: 1; }
+.nav-ico { font-size: 16px; width: 20px; text-align: center; opacity: 0.5; transition: opacity 0.18s; flex-shrink: 0; }
+.nav-item:hover .nav-ico { opacity: 0.8; }
+.nav-lbl { font-size: 14px; color: var(--ink-mid); transition: color 0.18s; }
+.nav-badge {
+  margin-left: auto; background: var(--mood-angry); color: white;
+  font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 20px;
+  animation: badge-pop 2s ease-in-out infinite;
+}
+@keyframes badge-pop { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+
+.sidebar-bottom {
+  padding: 14px; border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.sb-log-btn {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  color: white; border: none; border-radius: 10px;
+  font-family: var(--font-body); font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all 0.22s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.sb-log-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(26,122,122,0.32); }
+.theme-toggle {
+  width: 100%; padding: 10px;
+  background: var(--bg2); color: var(--ink-light);
+  border: 1.5px solid var(--border); border-radius: 10px;
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.theme-toggle:hover { background: var(--bg3); }
+
+/* ══════════════════════════════════════════
+   HAMBURGER + OVERLAY
+══════════════════════════════════════════ */
+.hamburger {
+  display: none; position: fixed; top: 14px; left: 14px;
+  z-index: 200; background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px; width: 44px; height: 44px;
+  align-items: center; justify-content: center;
+  cursor: pointer; flex-direction: column; gap: 5px;
+  box-shadow: var(--shadow-sm);
+}
+.hamburger span { display: block; width: 18px; height: 2px; background: var(--ink); border-radius: 2px; transition: all 0.3s; }
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: var(--overlay); z-index: 99; backdrop-filter: blur(2px); }
+
+/* ══════════════════════════════════════════
+   MAIN + TOPBAR
+══════════════════════════════════════════ */
+.main { margin-left: 262px; min-height: 100vh; }
+.topbar {
+  position: sticky; top: 0;
+  background: var(--topbar-bg);
+  backdrop-filter: blur(18px);
+  border-bottom: 1.5px solid var(--border);
+  padding: 15px 30px;
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 50; gap: 14px;
+  transition: background 0.35s, border-color 0.35s;
+}
+.topbar-title { font-family: var(--font-display); font-size: clamp(20px,2.5vw,28px); font-weight: 700; color: var(--ink); line-height: 1.1; }
+.topbar-sub   { font-size: 13px; color: var(--ink-faint); margin-top: 2px; }
+.topbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+.live-dot {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 14px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 20px; font-size: 12px; color: var(--ink-light);
+  box-shadow: var(--shadow-sm);
+}
+.live-dot::before {
+  content: ''; width: 7px; height: 7px;
+  background: var(--mood-positive); border-radius: 50%;
+  animation: live-blink 2s ease-in-out infinite;
+}
+@keyframes live-blink { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.35; transform:scale(0.75); } }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px; border-radius: 10px;
+  font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  cursor: pointer; border: none;
+  transition: all 0.2s; text-decoration: none; white-space: nowrap;
+}
+.btn-primary { background: linear-gradient(135deg, var(--teal), var(--teal-light)); color: white; box-shadow: 0 4px 16px rgba(26,122,122,0.25); }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 7px 24px rgba(26,122,122,0.38); }
+.btn-ghost { background: var(--surface); color: var(--ink-mid); border: 1.5px solid var(--border); box-shadow: var(--shadow-sm); }
+.btn-ghost:hover { background: var(--bg2); }
+
+/* ══════════════════════════════════════════
+   CONTENT + PAGES
+══════════════════════════════════════════ */
+.content { padding: 26px 30px 56px; }
+.page { display: none; animation: pg-in 0.38s ease both; }
+.page.active { display: block; }
+@keyframes pg-in { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+/* ══════════════════════════════════════════
+   HERO BANNER
+══════════════════════════════════════════ */
+.hero-banner {
+  background: linear-gradient(140deg, var(--teal) 0%, var(--teal-light) 55%, #3ab0a0 100%);
+  border-radius: 22px; padding: 34px 38px;
+  margin-bottom: 24px; position: relative; overflow: hidden;
+  box-shadow: 0 6px 32px rgba(26,122,122,0.22);
+  animation: rise-in 0.5s ease both;
+}
+.hero-banner .puzzle-bg { opacity: 0.15; }
+.hero-banner .african-bg { opacity: 0.08; top: auto; bottom: 0; height: 100px; }
+.hero-inner { position: relative; z-index: 1; }
+.hero-label { font-size: 12px; color: rgba(255,255,255,0.7); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+.hero-title { font-family: var(--font-display); font-size: clamp(24px,3.5vw,40px); font-weight: 700; color: white; line-height: 1.12; margin-bottom: 10px; }
+.hero-title em { font-style: italic; opacity: 0.85; }
+.hero-sub { font-size: 15px; color: rgba(255,255,255,0.78); line-height: 1.6; max-width: 520px; }
+.hero-pills { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+.hero-pill {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 10px; padding: 8px 14px;
+  font-size: 13px; color: white; font-weight: 500;
+  transition: background 0.2s;
+}
+.hero-pill:hover { background: rgba(255,255,255,0.22); }
+
+/* ══════════════════════════════════════════
+   STAT CARDS
+══════════════════════════════════════════ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 15px; margin-bottom: 22px;
+}
+.stat-card {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 20px 18px;
+  position: relative; overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  animation: rise-in 0.5s ease both; cursor: pointer;
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--sand); }
+.stat-card::before { content: ''; position: absolute; top:0; left:0; right:0; height:3px; border-radius: var(--radius) var(--radius) 0 0; }
+.sc-teal::before    { background: linear-gradient(90deg, var(--teal), var(--teal-light)); }
+.sc-green::before   { background: linear-gradient(90deg, var(--mood-positive), #52c788); }
+.sc-amber::before   { background: linear-gradient(90deg, var(--mood-stressed), var(--mood-happy)); }
+.sc-red::before     { background: linear-gradient(90deg, var(--mood-angry), #ef5350); }
+.sc-sand::before    { background: linear-gradient(90deg, var(--sand), var(--sand-light)); }
+
+.stat-card::after {
+  content: '';
+  position: absolute; bottom: -12px; right: -12px;
+  width: 72px; height: 72px;
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 8 h10 q1-5 5-5 q4 0 5 5 h10 v10 q5 1 5 5 q0 4-5 5 v10 h-10 q-1 5-5 5 q-4 0-5-5 h-10 v-10 q-5-1-5-5 q0-4 5-5 z' fill='none' stroke='currentColor' stroke-width='1'/%3E%3C/svg%3E");
+  opacity: 0.05; pointer-events: none;
+}
+.stat-icon  { font-size: 22px; margin-bottom: 10px; display: block; }
+.stat-lbl   { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; margin-bottom: 7px; }
+.stat-val   { font-family: var(--font-display); font-size: clamp(26px,3vw,38px); font-weight: 700; line-height: 1; margin-bottom: 6px; }
+.stat-delta { font-size: 12px; font-weight: 500; color: var(--ink-light); display: flex; align-items: center; gap: 3px; }
+.dlt-up   { color: var(--mood-positive); }
+.dlt-down { color: var(--mood-angry); }
+
+/* ══════════════════════════════════════════
+   CARDS
+══════════════════════════════════════════ */
+.card {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 22px;
+  box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  animation: rise-in 0.5s ease both;
+}
+.card:hover { border-color: var(--sand); }
+.card-hdr { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; gap: 10px; }
+.card-title { font-family: var(--font-display); font-size: clamp(16px,2vw,21px); font-weight: 700; color: var(--ink); line-height: 1.2; }
+.card-sub { font-size: 13px; color: var(--ink-faint); margin-top: 3px; }
+
+/* Pattern strip inside cards */
+.card-strip {
+  height: 3px; border-radius: 3px; margin-bottom: 16px;
+  background: repeating-linear-gradient(90deg,
+    var(--teal) 0px,        var(--teal) 10px,
+    var(--sand) 10px,       var(--sand) 16px,
+    var(--bg3) 16px,        var(--bg3) 22px,
+    var(--teal-light) 22px, var(--teal-light) 32px,
+    var(--mood-happy) 32px, var(--mood-happy) 38px,
+    var(--bg3) 38px,        var(--bg3) 44px
+  ); opacity: 0.7;
+}
+
+/* ══════════════════════════════════════════
+   CHIPS + BADGES
+══════════════════════════════════════════ */
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 11px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+  white-space: nowrap; flex-shrink: 0;
+}
+.chip-teal  { background: var(--teal-pale); color: var(--teal); border: 1px solid rgba(26,122,122,0.22); }
+.chip-red   { background: rgba(229,57,53,0.1); color: var(--mood-angry); border: 1px solid rgba(229,57,53,0.22); }
+.chip-green { background: rgba(39,174,96,0.1); color: var(--mood-positive); border: 1px solid rgba(39,174,96,0.22); }
+.chip-amber { background: rgba(245,124,0,0.1); color: var(--mood-stressed); border: 1px solid rgba(245,124,0,0.22); }
+.chip-sand  { background: rgba(200,170,128,0.2); color: #7a5f30; border: 1px solid rgba(200,170,128,0.38); }
+
+/* ══════════════════════════════════════════
+   MOOD LOG SECTION
+══════════════════════════════════════════ */
+.mood-grid {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 12px; margin-bottom: 22px;
+}
+.mood-btn {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 18px 12px 14px; border-radius: var(--radius-sm);
+  border: 2.5px solid transparent;
+  background: var(--surface2); cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.34,1.3,0.64,1);
+  position: relative; overflow: hidden;
+}
+.mood-btn::before {
+  content: ''; position: absolute; inset: 0;
+  background: inherit; opacity: 0; transition: opacity 0.2s;
+}
+.mood-btn:hover { transform: translateY(-4px) scale(1.02); box-shadow: var(--shadow-md); }
+.mood-btn.selected {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: var(--shadow-lg);
+}
+.mood-dot-xl {
+  width: 38px; height: 38px; border-radius: 50%;
+  margin-bottom: 10px; flex-shrink: 0;
+  transition: transform 0.2s;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+}
+.mood-btn:hover .mood-dot-xl  { transform: scale(1.1); }
+.mood-btn.selected .mood-dot-xl { transform: scale(1.15); }
+.mood-label { font-size: 13px; font-weight: 700; color: var(--ink-mid); text-align: center; }
+.mood-check {
+  position: absolute; top: 8px; right: 8px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--teal); color: white;
+  font-size: 10px; font-weight: 800;
+  display: none; align-items: center; justify-content: center;
+}
+.mood-btn.selected .mood-check { display: flex; }
+
+/* ══════════════════════════════════════════
+   MENTAL HEALTH FIRST AID PANEL
+══════════════════════════════════════════ */
+.firstaid-panel {
+  background: linear-gradient(135deg, #f0fdf8, #e8f9f5);
+  border: 1.5px solid rgba(39,174,96,0.3);
+  border-radius: var(--radius); padding: 22px 24px;
+  margin-top: 20px; display: none;
+  animation: rise-in 0.4s ease both;
+  position: relative; overflow: hidden;
+}
+[data-theme="dark"] .firstaid-panel {
+  background: linear-gradient(135deg, rgba(39,174,96,0.08), rgba(26,122,122,0.08));
+}
+.firstaid-panel.visible { display: block; }
+.fa-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.fa-icon { font-size: 28px; }
+.fa-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--ink); }
+.fa-sub { font-size: 13px; color: var(--ink-light); }
+.fa-steps { display: flex; flex-direction: column; gap: 10px; }
+.fa-step {
+  display: flex; gap: 13px; align-items: flex-start;
+  padding: 12px 14px; background: var(--surface);
+  border-radius: var(--radius-sm); border: 1px solid var(--border);
+  transition: transform 0.18s, box-shadow 0.18s;
+  animation: rise-in 0.4s ease both;
+}
+.fa-step:hover { transform: translateX(3px); box-shadow: var(--shadow-sm); }
+.fa-step-num {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--teal); color: white;
+  font-size: 12px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.fa-step-title { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 3px; }
+.fa-step-body  { font-size: 13px; color: var(--ink-light); line-height: 1.55; }
+
+/* Emergency contact button */
+.emergency-btn {
+  margin-top: 16px; width: 100%; padding: 14px;
+  background: linear-gradient(135deg, var(--mood-angry), #ef5350);
+  color: white; border: none; border-radius: var(--radius-sm);
+  font-family: var(--font-body); font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  box-shadow: 0 4px 16px rgba(229,57,53,0.25);
+}
+.emergency-btn:hover { transform: translateY(-1px); box-shadow: 0 7px 24px rgba(229,57,53,0.38); }
+
+/* ══════════════════════════════════════════
+   CALENDAR GRID
+══════════════════════════════════════════ */
+.cal-grid {
+  display: grid; grid-template-columns: repeat(7,1fr);
+  gap: 5px; margin-top: 4px;
+}
+.cal-day-hdr { text-align: center; font-size: 10px; font-weight: 700; color: var(--ink-faint); letter-spacing: 0.06em; padding-bottom: 4px; }
+.cal-cell {
+  aspect-ratio: 1; border-radius: 6px; cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+}
+.cal-cell:hover { transform: scale(1.18); z-index: 2; box-shadow: var(--shadow-sm); }
+.cal-cell-empty { background: var(--bg3); border: 1px solid var(--border2); }
+.cal-num {
+  position: absolute; bottom: 2px; right: 3px;
+  font-size: 8px; font-weight: 700; color: rgba(255,255,255,0.7);
+  font-family: var(--font-mono);
+}
+
+/* ══════════════════════════════════════════
+   PROGRESS + BARS
+══════════════════════════════════════════ */
+.prog-item { margin-bottom: 14px; }
+.prog-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.prog-label { font-size: 14px; font-weight: 500; color: var(--ink-mid); }
+.prog-val   { font-size: 14px; font-weight: 700; font-family: var(--font-mono); color: var(--ink); }
+.prog-bar   { height: 8px; background: var(--bg3); border-radius: 8px; overflow: hidden; }
+.prog-fill  { height: 100%; border-radius: 8px; width: 0%; transition: width 1.4s cubic-bezier(0.34,1.3,0.64,1); }
+
+/* ══════════════════════════════════════════
+   TWO / THREE COL
+══════════════════════════════════════════ */
+.two-col   { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }
+.three-col { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; margin-bottom: 22px; }
+.full-row  { margin-bottom: 22px; }
+
+/* ══════════════════════════════════════════
+   STUDENT ROWS
+══════════════════════════════════════════ */
+.student-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 13px; background: var(--surface2);
+  border-radius: var(--radius-sm); border: 1.5px solid transparent;
+  transition: all 0.2s; cursor: pointer; margin-bottom: 7px;
+  animation: rise-in 0.4s ease both;
+}
+.student-row:hover { border-color: var(--border); background: var(--surface); transform: translateX(3px); box-shadow: var(--shadow-sm); }
+.stu-avatar {
+  width: 36px; height: 36px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; font-family: var(--font-mono); flex-shrink: 0;
+}
+.stu-id   { font-size: 14px; font-weight: 700; color: var(--ink); font-family: var(--font-mono); }
+.stu-class{ font-size: 11px; color: var(--ink-faint); margin-top: 1px; }
+.mood-streak { display: flex; gap: 3px; align-items: center; }
+.mpip { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; transition: transform 0.15s; cursor: pointer; }
+.mpip:hover { transform: scale(1.5); z-index: 2; }
+.stu-flag {
+  font-size: 11px; font-weight: 700; padding: 4px 9px;
+  border-radius: 6px; flex-shrink: 0;
+}
+.f-ok       { background: rgba(39,174,96,0.1);  color: var(--mood-positive); border: 1px solid rgba(39,174,96,0.2); }
+.f-watch    { background: rgba(245,124,0,0.1);  color: var(--mood-stressed); border: 1px solid rgba(245,124,0,0.22); }
+.f-critical { background: rgba(229,57,53,0.1);  color: var(--mood-angry);    border: 1px solid rgba(229,57,53,0.2); animation: flag-pulse 2s ease infinite; }
+.f-silent   { background: rgba(200,170,128,0.18); color: #7a5f30; border: 1px solid rgba(200,170,128,0.35); }
+@keyframes flag-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(229,57,53,0); } 50% { box-shadow: 0 0 0 5px rgba(229,57,53,0.12); } }
+
+/* ══════════════════════════════════════════
+   ALERT CARDS
+══════════════════════════════════════════ */
+.alert-card {
+  display: flex; gap: 13px; align-items: flex-start;
+  padding: 13px 15px; border-radius: var(--radius-sm);
+  border-left: 4px solid; margin-bottom: 9px;
+  animation: slide-in 0.38s ease both;
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.alert-card:hover { transform: translateX(3px); box-shadow: var(--shadow-sm); }
+@keyframes slide-in { from { opacity:0; transform:translateX(-12px); } to { opacity:1; transform:translateX(0); } }
+.ac-critical { background: rgba(229,57,53,0.06);  border-color: var(--mood-angry); }
+.ac-warning  { background: rgba(245,124,0,0.06);  border-color: var(--mood-stressed); }
+.ac-info     { background: rgba(26,122,122,0.06); border-color: var(--teal); }
+.ac-positive { background: rgba(39,174,96,0.06);  border-color: var(--mood-positive); }
+.a-icon  { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.a-title { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 3px; }
+.a-body  { font-size: 13px; color: var(--ink-light); line-height: 1.5; }
+.a-time  { font-size: 10px; color: var(--ink-faint); font-family: var(--font-mono); margin-top: 5px; }
+
+/* ══════════════════════════════════════════
+   SECTION HEADER
+══════════════════════════════════════════ */
+.sec-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.sec-title { font-family: var(--font-display); font-size: clamp(18px,2.5vw,24px); font-weight: 700; color: var(--ink); }
+
+/* ══════════════════════════════════════════
+   CHART
+══════════════════════════════════════════ */
+.chart-wrap { position: relative; width: 100%; }
+
+/* ══════════════════════════════════════════
+   QUOTE BLOCK
+══════════════════════════════════════════ */
+.quote-block {
+  background: linear-gradient(135deg, var(--bg2), var(--bg3));
+  border: 1.5px solid var(--border); border-radius: var(--radius);
+  padding: 22px 26px; margin-bottom: 22px;
+  position: relative; overflow: hidden;
+  animation: rise-in 0.5s ease both;
+}
+.quote-block::before {
+  content: '"'; position: absolute;
+  top: -8px; left: 14px;
+  font-family: var(--font-display); font-size: 96px;
+  color: var(--teal); opacity: 0.12; line-height: 1; pointer-events: none;
+}
+.quote-block::after {
+  content: '';
+  position: absolute; right: 0; bottom: 0;
+  width: 100px; height: 100px;
+  background-image: url("data:image/svg+xml,%3Csvg width='50' height='50' viewBox='0 0 50 50' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 25 h8 q1-6 6-6 q5 0 6 6 h8 v8 q6 1 6 6 q0 5-6 6 v8 h-8 q-1 6-6 6 q-5 0-6-6 h-8 v-8 q-6-1-6-6 q0-5 6-6 z' fill='none' stroke='%231a7a7a' stroke-width='1.2'/%3E%3C/svg%3E");
+  opacity: 0.1; pointer-events: none; background-size: 50px 50px;
+}
+.qt-text { font-family: var(--font-display); font-size: clamp(15px,2vw,19px); font-weight: 500; color: var(--ink); line-height: 1.6; font-style: italic; position: relative; }
+.qt-text strong { font-style: normal; color: var(--teal); }
+.qt-src  { font-size: 12px; color: var(--ink-faint); margin-top: 9px; letter-spacing: 0.08em; text-transform: uppercase; position: relative; }
+
+/* ══════════════════════════════════════════
+   WELLBEING RING
+══════════════════════════════════════════ */
+.ring-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+.ring-center { position: absolute; text-align: center; }
+.ring-val { font-family: var(--font-display); font-size: 30px; font-weight: 700; color: var(--ink); display: block; line-height: 1; }
+.ring-lbl { font-size: 11px; color: var(--ink-faint); letter-spacing: 0.07em; }
+
+/* ══════════════════════════════════════════
+   PATTERN BADGE
+══════════════════════════════════════════ */
+.pat-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 16px; border-radius: 50px;
+  font-size: 13px; font-weight: 700;
+}
+.pb-stable      { background: rgba(39,174,96,0.1); color: var(--mood-positive); border: 1.5px solid rgba(39,174,96,0.25); }
+.pb-fluctuating { background: rgba(245,124,0,0.1); color: var(--mood-stressed); border: 1.5px solid rgba(245,124,0,0.28); }
+.pb-declining   { background: rgba(229,57,53,0.08); color: var(--mood-angry); border: 1.5px solid rgba(229,57,53,0.25); animation: pb-warn 2s ease infinite; }
+@keyframes pb-warn { 0%,100% { box-shadow: 0 0 0 0 rgba(229,57,53,0); } 50% { box-shadow: 0 0 0 6px rgba(229,57,53,0.1); } }
+
+/* ══════════════════════════════════════════
+   HEATMAP
+══════════════════════════════════════════ */
+.hm-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; }
+.hm-cell {
+  border-radius: 11px; padding: 13px 11px; text-align: center;
+  cursor: pointer; transition: all 0.2s;
+  animation: rise-in 0.4s ease both; border: 1.5px solid transparent;
+}
+.hm-cell:hover { transform: scale(1.05); border-color: rgba(255,255,255,0.35); box-shadow: var(--shadow-md); }
+.hm-name { font-size: 11px; font-weight: 700; margin-bottom: 3px; }
+.hm-val  { font-family: var(--font-display); font-size: 20px; font-weight: 700; }
+.hm-sub  { font-size: 10px; opacity: 0.75; margin-top: 2px; }
+.hm-c  { background: rgba(229,57,53,0.18); color: var(--mood-angry); }
+.hm-h  { background: rgba(245,124,0,0.15); color: var(--mood-stressed); }
+.hm-m  { background: rgba(245,197,24,0.18); color: #a08000; }
+.hm-l  { background: rgba(100,181,246,0.18); color: #1565c0; }
+.hm-g  { background: rgba(39,174,96,0.14); color: var(--mood-positive); }
+
+/* ══════════════════════════════════════════
+   PRIVACY BANNER
+══════════════════════════════════════════ */
+.privacy-banner {
+  background: var(--teal-wash);
+  border: 1.5px solid var(--teal-pale);
+  border-radius: var(--radius); padding: 16px 20px;
+  display: flex; gap: 14px; align-items: flex-start;
+  margin-bottom: 20px;
+  animation: rise-in 0.5s ease both;
+}
+.pb-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+.pb-title { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.pb-text  { font-size: 13px; color: var(--ink-light); line-height: 1.55; }
+
+/* ══════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════ */
+@media (max-width:1100px) {
+  .stats-grid { grid-template-columns: repeat(2,1fr); }
+  .two-col, .three-col { grid-template-columns: 1fr; }
+  .mood-grid { grid-template-columns: repeat(4,1fr); }
+}
+@media (max-width:768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); box-shadow: 8px 0 32px rgba(28,26,22,0.15); }
+  .sidebar-overlay.open { display: block; }
+  .hamburger { display: flex; }
+  .main { margin-left: 0; }
+  .topbar { padding: 13px 16px 13px 66px; }
+  .content { padding: 18px 14px 48px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 11px; }
+  .mood-grid { grid-template-columns: repeat(4,1fr); gap: 8px; }
+}
+@media (max-width:480px) {
+  .mood-grid { grid-template-columns: repeat(4,1fr); }
+  .mood-btn { padding: 12px 6px 10px; }
+  .mood-dot-xl { width: 28px; height: 28px; }
+  .mood-label { font-size: 11px; }
+  .hm-grid { grid-template-columns: repeat(2,1fr); }
+}
+
+/* ══════════════════════════════════════════
+   SCROLLBARS
+══════════════════════════════════════════ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: var(--sand); }
+.sidebar-nav::-webkit-scrollbar { display: none; }
+
+/* Log success */
+.log-success {
+  display: none; align-items: center; gap: 10px;
+  background: rgba(39,174,96,0.1);
+  border: 1.5px solid rgba(39,174,96,0.25);
+  border-radius: 10px; padding: 14px 18px;
+  color: var(--mood-positive); font-weight: 700; font-size: 14px;
+  animation: rise-in 0.4s ease;
+  margin-top: 14px;
+}
+
+/* ══════════════════════════════════════════
+   METRIC PILLS
+══════════════════════════════════════════ */
+.metric-row { display: flex; gap: 11px; margin-bottom: 22px; flex-wrap: wrap; }
+.metric-pill {
+  display: flex; align-items: center; gap: 9px;
+  padding: 11px 16px; background: var(--surface);
+  border: 1.5px solid var(--border); border-radius: 50px;
+  flex: 1; min-width: 130px; box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+}
+.metric-pill:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--sand); }
+.mp-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+.mp-lbl { font-size: 12px; color: var(--ink-faint); }
+.mp-val { font-family: var(--font-display); font-size: 21px; font-weight: 700; margin-left: auto; color: var(--ink); }
+
+/* mood color legend */
+.mood-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.ml-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-light); }
+.ml-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 </style>
 </head>
 <body>
 
-<!-- HAMBURGER -->
+<!-- ══════════════════════════════════════════════════
+     ONBOARDING
+══════════════════════════════════════════════════ -->
+<div id="onboarding">
+<div class="ob-wrap">
+
+  <div class="ob-pattern-strip"></div>
+  <div class="ob-card">
+
+    <div class="ob-hero">
+      <div class="puzzle-bg"></div>
+      <div class="ob-hero-inner">
+        <div class="ob-brand">
+          <div class="ob-brand-mark">🧩</div>
+          <div class="ob-brand-text">
+            <div class="name">DCI Mood Tracker</div>
+            <div class="tag">Schools & Learning Institutions</div>
+          </div>
+        </div>
+        <div class="ob-title">Own your healing.<br><em>Colour your feelings.</em></div>
+        <div class="ob-desc">Take a moment each day. Pick a colour. Reflect. Your pattern tells a story — and you're the first to read it.</div>
+      </div>
+    </div>
+
+    <div class="ob-body">
+      <!-- Step 1 -->
+      <div class="ob-step active" id="step1">
+        <div class="ob-step-label">Step 1 of 3 — Your Identity</div>
+        <div class="privacy-note">
+          <span class="pn-icon">🔒</span>
+          <span>Your <strong>roll number</strong> is used instead of your name in all group reports. Only your institution's designated counsellor can link your number to your NIN. Your emotional data is yours first.</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Roll Number / Student ID</label>
+            <input type="text" id="ob-rollno" placeholder="e.g. GHA-2025-0142" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label>Year / Class</label>
+            <input type="text" id="ob-class" placeholder="e.g. S3B" autocomplete="off">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Institution Name</label>
+          <input type="text" id="ob-inst" placeholder="e.g. Greenhill Academy, Kampala" autocomplete="off">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Your Role</label>
+            <select id="ob-role">
+              <option value="student">👤 Student / Learner</option>
+              <option value="counsellor">🤝 Guidance Counsellor</option>
+              <option value="admin">🏫 School Administrator</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>District</label>
+            <select id="ob-district">
+              <option>Kampala</option><option>Wakiso</option><option>Mukono</option>
+              <option>Jinja</option><option>Gulu</option><option>Mbarara</option>
+              <option>Masaka</option><option>Mbale</option><option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="ob-nav">
+          <button class="ob-btn-primary" onclick="obNext(2)">Continue → Next of Kin</button>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="ob-step" id="step2">
+        <div class="ob-step-label">Step 2 of 3 — Next of Kin</div>
+        <div class="privacy-note">
+          <span class="pn-icon">❤️</span>
+          <span>Next of kin details are <strong>only contacted</strong> when a counsellor flags a critical concern and standard support has been exhausted. This information stays protected.</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="ob-kin-name" placeholder="e.g. Margaret Nakato" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label>Relationship</label>
+            <select id="ob-kin-rel">
+              <option>Parent</option><option>Guardian</option><option>Sibling</option>
+              <option>Aunt / Uncle</option><option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" id="ob-kin-phone" placeholder="e.g. +256 77X XXX XXX" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label>Alt. Phone (optional)</label>
+            <input type="tel" id="ob-kin-alt" placeholder="e.g. +256 70X XXX XXX" autocomplete="off">
+          </div>
+        </div>
+        <div class="ob-nav">
+          <button class="ob-btn-back" onclick="obNext(1)">← Back</button>
+          <button class="ob-btn-primary" onclick="obNext(3)">Continue → Wellbeing Baseline</button>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="ob-step" id="step3">
+        <div class="ob-step-label">Step 3 of 3 — A Quick Check-in</div>
+        <p style="font-size:14px;color:var(--ink-light);line-height:1.6;margin-bottom:18px;">How have you been feeling <strong>in general</strong> over the last week? Pick the colour that fits best. This sets your personal baseline.</p>
+        <div class="mood-grid" id="ob-mood-grid">
+          <div class="mood-btn" data-mood="happy"     onclick="obSelectMood(this)" style="border-color:transparent"><span class="mood-dot-xl" style="background:var(--mood-happy)"></span><span class="mood-label">Happy</span><span class="mood-check">✓</span></div>
+          <div class="mood-btn" data-mood="positive"  onclick="obSelectMood(this)" style="border-color:transparent"><span class="mood-dot-xl" style="background:var(--mood-positive)"></span><span class="mood-label">Positive</span><span class="mood-check">✓</span></div>
+          <div class="mood-btn" data-mood="neutral"   onclick="obSelectMood(this)" style="border-color:transparent"><span class="mood-dot-xl" style="background:var(--mood-neutral)"></span><span class="mood-label">Neutral</span><span class="mood-check">✓</span></div>
+          <div class="mood-btn" data-mood="stressed"  onclick="obSelectMood(this)" style="border-color:transparent"><span class="mood-dot-xl" style="background:var(--mood-stressed)"></span><span class="mood-label">Stressed</span><span class="mood-check">✓</span></div>
+          <div class="mood-btn" data-mood="sick"      onclick="obSelectMood(this)" style="border-color:transparent"><span class="mood-dot-xl" style="background:var(--mood-sick)"></span><span class="mood-label">Sick</span><span class="mood-check">✓</span></div>
+          <div class="mood-btn" data-mood="angry"     onclick="obSelectMood(this)" style="border-color:transparent"><span class="mood-dot-xl" style="background:var(--mood-angry)"></span><span class="mood-label">Angry</span><span class="mood-check">✓</span></div>
+          <div class="mood-btn" data-mood="sad"       onclick="obSelectMood(this)" style="border-color:transparent"><span class="mood-dot-xl" style="background:var(--mood-sad)"></span><span class="mood-label">Sad</span><span class="mood-check">✓</span></div>
+          <div class="mood-btn" data-mood="depressed" onclick="obSelectMood(this)" style="border-color:transparent"><span class="mood-dot-xl" style="background:var(--mood-depressed)"></span><span class="mood-label">Depressed</span><span class="mood-check">✓</span></div>
+        </div>
+        <div class="ob-nav" style="margin-top:20px">
+          <button class="ob-btn-back" onclick="obNext(2)">← Back</button>
+          <button class="ob-btn-primary" onclick="launchApp()">Launch My Dashboard →</button>
+        </div>
+      </div>
+
+      <div class="step-dots">
+        <div class="step-dot active" id="dot1"></div>
+        <div class="step-dot" id="dot2"></div>
+        <div class="step-dot" id="dot3"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /onboarding -->
+
+<!-- ══════════════════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════════════════ -->
+<div id="app">
+
 <div class="hamburger" id="hamburger" onclick="toggleSidebar()">
   <span></span><span></span><span></span>
 </div>
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-badge">
-      <div class="logo-icon">🧠</div>
+  <div class="sidebar-top-strip"></div>
+  <div class="sidebar-head">
+    <div class="sb-brand">
+      <div class="sb-mark">🧩</div>
       <div>
-        <div class="logo-text">DCI EWS</div>
-        <div class="logo-sub">Deeper Connection</div>
+        <div class="sb-name">DCI Tracker</div>
+        <div class="sb-sub">Schools Edition</div>
       </div>
     </div>
-  </div>
-
-  <div class="sidebar-section">
-    <div class="sidebar-label">Overview</div>
-    <div class="nav-item active" onclick="navigate('upload')">
-      <span class="nav-icon">📤</span>
-      <span class="nav-label">Data Input</span>
-    </div>
-    <div class="nav-item" onclick="navigate('student')">
-      <span class="nav-icon">👤</span>
-      <span class="nav-label">Student View</span>
+    <div class="sb-user-card">
+      <div class="sb-user-ava" id="sb-ava">ST</div>
+      <div>
+        <div class="sb-user-id" id="sb-id">GHA-2025-0142</div>
+        <div class="sb-user-inst" id="sb-inst">Greenhill Academy</div>
+      </div>
+      <span class="sb-mode-chip mode-student" id="sb-mode">Student</span>
     </div>
   </div>
 
-  <div class="sidebar-section">
-    <div class="sidebar-label">Intelligence</div>
-    <div class="nav-item" onclick="navigate('school')">
-      <span class="nav-icon">🏫</span>
-      <span class="nav-label">School View</span>
-    </div>
-    <div class="nav-item" onclick="navigate('district')">
-      <span class="nav-icon">🗺️</span>
-      <span class="nav-label">District / National</span>
-    </div>
-  </div>
+  <div class="sidebar-nav">
+    <div class="nav-sec-lbl">My Space</div>
+    <div class="nav-item active" onclick="nav('overview')"><span class="nav-ico">🏠</span><span class="nav-lbl">Overview</span></div>
+    <div class="nav-item" onclick="nav('log')"><span class="nav-ico">✏️</span><span class="nav-lbl">Log Today</span></div>
+    <div class="nav-item" onclick="nav('calendar')"><span class="nav-ico">📅</span><span class="nav-lbl">My Calendar</span></div>
+    <div class="nav-item" onclick="nav('firstaid')"><span class="nav-ico">🩺</span><span class="nav-lbl">First Aid & Coping</span></div>
 
-  <div class="sidebar-section">
-    <div class="sidebar-label">Response</div>
-    <div class="nav-item" onclick="navigate('alerts')">
-      <span class="nav-icon">🚨</span>
-      <span class="nav-label">Alerts Engine</span>
-      <span class="nav-badge">5</span>
-    </div>
+    <div class="nav-sec-lbl">Institution View</div>
+    <div class="nav-item" onclick="nav('cohort')"><span class="nav-ico">👥</span><span class="nav-lbl">Cohort Analytics</span></div>
+    <div class="nav-item" onclick="nav('counsellor')"><span class="nav-ico">🤝</span><span class="nav-lbl">Counsellor View</span></div>
+    <div class="nav-item" onclick="nav('alerts')"><span class="nav-ico">🔔</span><span class="nav-lbl">Alerts</span><span class="nav-badge">4</span></div>
   </div>
 
   <div class="sidebar-bottom">
-    <div class="school-info">
-      <div class="school-avatar">🇺🇬</div>
-      <div>
-        <div class="school-name">Kampala Central</div>
-        <div class="school-role">Guidance Counsellor</div>
-      </div>
-    </div>
+    <button class="sb-log-btn" onclick="nav('log')">✏️ Log Today's Mood</button>
+    <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙 Dark Mode</button>
   </div>
 </aside>
 
 <!-- MAIN -->
 <main class="main">
-  <!-- TOP BAR -->
   <header class="topbar">
-    <div class="topbar-left">
-      <h1 id="page-title">Data Input</h1>
-      <p id="page-sub">Upload or simulate a mood tracker scan to begin</p>
+    <div>
+      <div class="topbar-title" id="pg-title">Overview</div>
+      <div class="topbar-sub" id="pg-sub">Your wellbeing at a glance</div>
     </div>
     <div class="topbar-right">
-      <div class="live-dot"><span>System Live</span></div>
-      <button class="btn btn-primary" onclick="navigate('alerts')">⚡ View Alerts</button>
+      <div class="live-dot">Live</div>
+      <button class="btn btn-primary" onclick="nav('log')">✏️ Log Mood</button>
     </div>
   </header>
 
   <div class="content">
 
-    <!-- ══════════════════════════════════
-         PAGE: UPLOAD / DATA INPUT
-    ══════════════════════════════════ -->
-    <div class="page active" id="page-upload">
-      <div class="upload-hero">
-        <h2>Turn Colour Into Intelligence</h2>
-        <p>Upload a photo of any filled Mood Tracker page. Our AI reads the colours, maps the emotions, and surfaces the patterns that matter.</p>
-      </div>
-
-      <div style="display:flex; gap:20px; justify-content:center; flex-wrap:wrap; margin-bottom:32px;">
-        <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-          <span class="upload-icon">📋</span>
-          <h3>Drop Your Mood Tracker Here</h3>
-          <p>Photograph a filled page and upload it — any month, any school</p>
-          <button class="btn btn-ghost" style="margin-bottom:0">Choose Photo</button>
-          <div class="divider-text">OR</div>
-          <button class="simulate-btn" onclick="event.stopPropagation(); startSimulation()">
-            ✨ Simulate AI Scan
-          </button>
-          <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(event)">
-        </div>
-      </div>
-
-      <div class="insight-box">
-        <span class="insight-icon">💡</span>
-        <div>
-          <div class="insight-title">How It Works</div>
-          <div class="insight-text">
-            The Mood Tracker book uses colour-coded squares — one per day. Students colour each day's square with the emotion they felt: <strong style="color:var(--happy)">Green for Happy</strong>, <strong style="color:var(--neutral)">Yellow for Neutral</strong>, <strong style="color:var(--red-light)">Red for Distressed</strong>, and more. When scanned, our AI extracts these patterns, builds timelines, and flags students who may need support before crisis hits.
-          </div>
-        </div>
-      </div>
-
-      <div class="two-col">
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <div class="card-title">Mood Colour Key</div>
-              <div class="card-sub">How colours map to emotional states</div>
-            </div>
-          </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <div class="legend-item" style="font-size:14px; padding:8px 0; border-bottom:1px solid var(--border2);">
-              <span class="legend-dot" style="background:var(--happy)"></span> Happy
-            </div>
-            <div class="legend-item" style="font-size:14px; padding:8px 0; border-bottom:1px solid var(--border2);">
-              <span class="legend-dot" style="background:var(--positive)"></span> Positive
-            </div>
-            <div class="legend-item" style="font-size:14px; padding:8px 0; border-bottom:1px solid var(--border2);">
-              <span class="legend-dot" style="background:var(--neutral)"></span> Neutral
-            </div>
-            <div class="legend-item" style="font-size:14px; padding:8px 0; border-bottom:1px solid var(--border2);">
-              <span class="legend-dot" style="background:var(--bored)"></span> Bored
-            </div>
-            <div class="legend-item" style="font-size:14px; padding:8px 0; border-bottom:1px solid var(--border2);">
-              <span class="legend-dot" style="background:var(--sick)"></span> Sick
-            </div>
-            <div class="legend-item" style="font-size:14px; padding:8px 0; border-bottom:1px solid var(--border2);">
-              <span class="legend-dot" style="background:var(--stressed)"></span> Stressed
-            </div>
-            <div class="legend-item" style="font-size:14px; padding:8px 0; border-bottom:1px solid var(--border2);">
-              <span class="legend-dot" style="background:var(--angry)"></span> Angry
-            </div>
-            <div class="legend-item" style="font-size:14px; padding:8px 0; border-bottom:1px solid var(--border2);">
-              <span class="legend-dot" style="background:var(--sad)"></span> Sad
-            </div>
-            <div class="legend-item" style="font-size:14px; padding:8px 0;">
-              <span class="legend-dot" style="background:var(--depressed)"></span> Depressed
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <div class="card-title">System Status</div>
-              <div class="card-sub">Current data snapshot — Term 1, 2025</div>
-            </div>
-            <span class="chip chip-green">● Live</span>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:14px;">
-            <div class="progress-item">
-              <div class="progress-meta">
-                <span class="progress-label">Schools Reporting</span>
-                <span class="progress-val" style="color:var(--teal-light)">24 / 31</span>
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill" style="background:linear-gradient(90deg,var(--teal),var(--teal-light)); width:77%"></div>
-              </div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-meta">
-                <span class="progress-label">Students Tracked</span>
-                <span class="progress-val" style="color:var(--happy)">4,821</span>
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill" style="background:linear-gradient(90deg,var(--happy),var(--positive)); width:82%"></div>
-              </div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-meta">
-                <span class="progress-label">Data Completeness</span>
-                <span class="progress-val" style="color:var(--neutral)">68%</span>
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill" style="background:linear-gradient(90deg,var(--neutral),var(--bored)); width:68%"></div>
-              </div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-meta">
-                <span class="progress-label">Flags Resolved This Week</span>
-                <span class="progress-val" style="color:var(--sick)">7 / 12</span>
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill" style="background:linear-gradient(90deg,var(--sick),var(--stressed)); width:58%"></div>
-              </div>
-            </div>
-          </div>
+  <!-- ════════════════════════════════
+       PAGE: OVERVIEW
+  ════════════════════════════════ -->
+  <div class="page active" id="page-overview">
+    <div class="hero-banner">
+      <div class="puzzle-bg"></div>
+      <div class="african-bg"></div>
+      <div class="hero-inner">
+        <div class="hero-label">DCI Mood Tracker — <span id="hero-inst">Your Institution</span></div>
+        <div class="hero-title">Every colour tells<br><em>a story.</em></div>
+        <div class="hero-sub">Your 30-day mood pattern is the most honest picture of how you're really doing. Own it. Understand it. Use it.</div>
+        <div class="hero-pills">
+          <div class="hero-pill">🧩 Puzzle: <span id="hero-streak" style="margin-left:4px;font-weight:700">14-day streak</span></div>
+          <div class="hero-pill" id="hero-pattern-pill">📊 Pattern: Stable</div>
+          <div class="hero-pill">🔒 Privacy Protected</div>
+          <div class="hero-pill" id="hero-id-pill">ID: GHA-2025-0142</div>
         </div>
       </div>
     </div>
 
-    <!-- ══════════════════════════════════
-         PAGE: STUDENT VIEW
-    ══════════════════════════════════ -->
-    <div class="page" id="page-student">
-      <div class="tabs">
-        <button class="tab active" onclick="setStudentTab(this,'tab-timeline')">📈 Timeline</button>
-        <button class="tab" onclick="setStudentTab(this,'tab-profile')">👤 Profile</button>
-        <button class="tab" onclick="setStudentTab(this,'tab-allstudents')">📋 All Students</button>
+    <div class="stats-grid">
+      <div class="stat-card sc-teal" style="animation-delay:.05s">
+        <span class="stat-icon">📅</span>
+        <div class="stat-lbl">Days Logged</div>
+        <div class="stat-val" style="color:var(--teal)">22</div>
+        <div class="stat-delta dlt-up">↑ +5 this week</div>
       </div>
-
-      <!-- Timeline Tab -->
-      <div id="tab-timeline">
-        <div class="section-header">
-          <div>
-            <div class="section-title">Aisha Nakato — S3B</div>
-            <div style="font-size:13px;color:var(--text-muted);margin-top:3px;">Greenhill Academy, Kampala · Roll No. 0142</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <span class="pattern-badge pattern-declining">⚠️ Declining Pattern</span>
-          </div>
-        </div>
-
-        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;">
-          <div class="stat-card green">
-            <div class="stat-label">😊 Happy Days</div>
-            <div class="stat-value" style="color:var(--happy)">8</div>
-            <div class="stat-delta delta-down">↓ Down from 14 last month</div>
-          </div>
-          <div class="stat-card amber">
-            <div class="stat-label">😐 Neutral Days</div>
-            <div class="stat-value" style="color:var(--neutral)">6</div>
-            <div class="stat-delta delta-same">→ Steady</div>
-          </div>
-          <div class="stat-card red">
-            <div class="stat-label">😟 Distress Days</div>
-            <div class="stat-value" style="color:var(--red-light)">9</div>
-            <div class="stat-delta delta-down">↑ Up from 3 last month</div>
-          </div>
-          <div class="stat-card blue">
-            <div class="stat-label">📊 Wellbeing Score</div>
-            <div class="stat-value" style="color:var(--teal-light)">38</div>
-            <div class="stat-delta delta-down">↓ Critical threshold</div>
-          </div>
-        </div>
-
-        <div class="card" style="margin-bottom:20px;">
-          <div class="card-header">
-            <div>
-              <div class="card-title">Daily Mood Timeline — March 2025</div>
-              <div class="card-sub">Colour-coded emotional data from physical tracker</div>
-            </div>
-            <span class="chip chip-red">🚨 Flagged</span>
-          </div>
-          <div class="chart-wrap" style="height:220px;">
-            <canvas id="studentTimelineChart"></canvas>
-          </div>
-          <div class="mood-legend">
-            <div class="legend-item"><span class="legend-dot" style="background:var(--happy)"></span> Happy</div>
-            <div class="legend-item"><span class="legend-dot" style="background:var(--neutral)"></span> Neutral</div>
-            <div class="legend-item"><span class="legend-dot" style="background:var(--stressed)"></span> Stressed</div>
-            <div class="legend-item"><span class="legend-dot" style="background:var(--sad)"></span> Sad</div>
-            <div class="legend-item"><span class="legend-dot" style="background:var(--depressed)"></span> Depressed</div>
-          </div>
-        </div>
-
-        <div class="two-col">
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <div class="card-title">Weekly Breakdown</div>
-                <div class="card-sub">Emotional trend by week</div>
-              </div>
-            </div>
-            <div class="chart-wrap" style="height:180px;">
-              <canvas id="weeklyBreakdownChart"></canvas>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <div class="card-title">AI Insight</div>
-                <div class="card-sub">Pattern analysis summary</div>
-              </div>
-              <span class="chip chip-teal">AI</span>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:12px;">
-              <div class="alert-card critical">
-                <span class="alert-icon">🔴</span>
-                <div>
-                  <div class="alert-title">Declining Pattern Detected</div>
-                  <div class="alert-body">Aisha has recorded 9 distress-coded days in the past 3 weeks — a significant increase from her baseline of 3 per month. Immediate counsellor check-in recommended.</div>
-                  <div class="alert-time">Detected: 24 Mar 2025 · Confidence: 94%</div>
-                </div>
-              </div>
-              <div class="alert-card warning">
-                <span class="alert-icon">🟡</span>
-                <div>
-                  <div class="alert-title">Absence Correlation</div>
-                  <div class="alert-body">4 of the last 7 distress days coincide with Monday — may indicate weekend-related stressors or home environment factors.</div>
-                  <div class="alert-time">Pattern window: 3 weeks</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="stat-card sc-green" style="animation-delay:.10s">
+        <span class="stat-icon">😊</span>
+        <div class="stat-lbl">Wellbeing Score</div>
+        <div class="stat-val" style="color:var(--mood-positive)">74</div>
+        <div class="stat-delta dlt-up">↑ +6 pts this month</div>
       </div>
-
-      <!-- Profile Tab -->
-      <div id="tab-profile" style="display:none;">
-        <div class="two-col">
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <div class="card-title">Student Profile</div>
-                <div class="card-sub">Greenhill Academy, Kampala</div>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
-              <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,var(--teal),var(--teal-light));display:flex;align-items:center;justify-content:center;font-size:28px;">👩🏾</div>
-              <div>
-                <div style="font-family:var(--font-display);font-size:22px;font-weight:700;">Aisha Nakato</div>
-                <div style="font-size:13px;color:var(--text-muted);">S3B · Roll No. 0142 · Age 16</div>
-              </div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:10px;">
-              <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border2);">
-                <span style="font-size:13px;color:var(--text-muted)">Class Teacher</span>
-                <span style="font-size:13px;font-weight:500;">Mr. David Sserwanga</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border2);">
-                <span style="font-size:13px;color:var(--text-muted)">Months Tracked</span>
-                <span style="font-size:13px;font-weight:500;">3 months</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border2);">
-                <span style="font-size:13px;color:var(--text-muted)">Last Counsellor Visit</span>
-                <span style="font-size:13px;font-weight:500;color:var(--red-light);">Never — Overdue</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:10px 0;">
-                <span style="font-size:13px;color:var(--text-muted)">Status</span>
-                <span class="chip chip-red">⚠️ Flagged</span>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header">
-              <div><div class="card-title">3-Month Trend</div><div class="card-sub">Wellbeing score over time</div></div>
-            </div>
-            <div class="chart-wrap" style="height:200px;">
-              <canvas id="threeMonthChart"></canvas>
-            </div>
-          </div>
-        </div>
+      <div class="stat-card sc-amber" style="animation-delay:.15s">
+        <span class="stat-icon">🔆</span>
+        <div class="stat-lbl">Happy Days</div>
+        <div class="stat-val" style="color:var(--mood-happy)">12</div>
+        <div class="stat-delta">This month</div>
       </div>
-
-      <!-- All Students Tab -->
-      <div id="tab-allstudents" style="display:none;">
-        <div class="card">
-          <div class="card-header">
-            <div><div class="card-title">All Students — S3B</div><div class="card-sub">Greenhill Academy · 32 students</div></div>
-            <button class="btn btn-ghost" style="padding:8px 14px;font-size:13px;">Export CSV</button>
-          </div>
-          <div class="student-list" id="studentList"></div>
-        </div>
+      <div class="stat-card sc-red" style="animation-delay:.20s">
+        <span class="stat-icon">⚡</span>
+        <div class="stat-lbl">Distress Days</div>
+        <div class="stat-val" style="color:var(--mood-angry)">4</div>
+        <div class="stat-delta dlt-up">↓ Down from 9</div>
       </div>
     </div>
 
-    <!-- ══════════════════════════════════
-         PAGE: SCHOOL VIEW
-    ══════════════════════════════════ -->
-    <div class="page" id="page-school">
-
-      <div class="metric-row">
-        <div class="metric-pill">
-          <span class="metric-pill-dot" style="background:var(--happy)"></span>
-          <div><div class="metric-pill-label">Well / Happy</div><div class="metric-pill-val" style="color:var(--happy)">54%</div></div>
-        </div>
-        <div class="metric-pill">
-          <span class="metric-pill-dot" style="background:var(--neutral)"></span>
-          <div><div class="metric-pill-label">Neutral / Okay</div><div class="metric-pill-val" style="color:var(--neutral)">28%</div></div>
-        </div>
-        <div class="metric-pill">
-          <span class="metric-pill-dot" style="background:var(--red-light)"></span>
-          <div><div class="metric-pill-label">Distressed</div><div class="metric-pill-val" style="color:var(--red-light)">18%</div></div>
-        </div>
-        <div class="metric-pill">
-          <span class="metric-pill-dot" style="background:var(--teal-light)"></span>
-          <div><div class="metric-pill-label">Students Tracked</div><div class="metric-pill-val" style="color:var(--teal-light)">312</div></div>
-        </div>
-      </div>
-
-      <div class="three-col">
-        <div class="card">
-          <div class="card-header">
-            <div><div class="card-title">School Mood Distribution</div><div class="card-sub">Greenhill Academy — March 2025</div></div>
-            <span class="chip chip-amber">⚠️ Watch</span>
-          </div>
-          <div class="chart-wrap" style="height:240px;">
-            <canvas id="schoolDistChart"></canvas>
-          </div>
-          <div class="mood-legend" style="justify-content:center;">
-            <div class="legend-item"><span class="legend-dot" style="background:var(--happy)"></span> Happy 54%</div>
-            <div class="legend-item"><span class="legend-dot" style="background:var(--neutral)"></span> Neutral 28%</div>
-            <div class="legend-item"><span class="legend-dot" style="background:var(--red-light)"></span> Distressed 18%</div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <div><div class="card-title">Wellbeing Ring</div><div class="card-sub">Overall school score</div></div>
-          </div>
-          <div class="wellbeing-ring-wrap" style="height:180px;">
-            <canvas id="wellbeingDonut" width="160" height="160"></canvas>
-            <div class="wellbeing-center-text">
-              <span class="wellbeing-pct">68</span>
-              <span class="wellbeing-lbl">/ 100</span>
-            </div>
-          </div>
-          <div style="text-align:center;margin-top:8px;">
-            <span class="pattern-badge pattern-fluctuating">⚡ Fluctuating</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="two-col">
-        <div class="card">
-          <div class="card-header">
-            <div><div class="card-title">Class Comparison</div><div class="card-sub">Distress rate by form / class</div></div>
-          </div>
-          <div class="chart-wrap" style="height:200px;">
-            <canvas id="classCompareChart"></canvas>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <div><div class="card-title">Top Trends This Month</div><div class="card-sub">AI-detected patterns across school</div></div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:10px;">
-            <div class="alert-card warning">
-              <span class="alert-icon">📉</span>
-              <div><div class="alert-title">S3 Distress Spike</div><div class="alert-body">Senior 3 shows a 24% increase in stressed/angry days vs last month. Exam pressure likely contributing factor.</div></div>
-            </div>
-            <div class="alert-card info">
-              <span class="alert-icon">📈</span>
-              <div><div class="alert-title">S1 Improving</div><div class="alert-body">Senior 1 wellbeing improved by 15% following last month's school wellness day. Positive response confirmed.</div></div>
-            </div>
-            <div class="alert-card critical">
-              <span class="alert-icon">🔴</span>
-              <div><div class="alert-title">3 Students Need Urgent Review</div><div class="alert-body">Three students have 7+ consecutive distress-coded days. Immediate counsellor outreach required.</div></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div class="three-col">
       <div class="card">
-        <div class="card-header">
-          <div><div class="card-title">Teacher Wellbeing Monitor</div><div class="card-sub">Staff emotional health is tracked too</div></div>
-          <span class="chip chip-teal">New Feature</span>
+        <div class="card-strip"></div>
+        <div class="card-hdr">
+          <div><div class="card-title">My March 2025</div><div class="card-sub">Daily mood — colour your month</div></div>
+          <span class="chip chip-teal">Live</span>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">
-          <div class="teacher-card">
-            <div class="teacher-ava" style="background:rgba(74,222,128,0.15);color:var(--happy);">👨🏾‍🏫</div>
-            <div class="teacher-info"><div class="teacher-name">Mr. Sserwanga</div><div class="teacher-role">Class Teacher · S3B</div></div>
-            <div class="teacher-trend" style="background:rgba(74,222,128,0.1);color:var(--happy);">↑ Stable</div>
+        <div class="cal-grid" id="ov-cal"></div>
+        <div class="mood-legend" style="margin-top:14px">
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-happy)"></span>Happy</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-positive)"></span>Positive</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-neutral)"></span>Neutral</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-stressed)"></span>Stressed</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-angry)"></span>Angry</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-sad)"></span>Sad</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-depressed)"></span>Depressed</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--bg3);border:1px solid var(--border)"></span>Not logged</div>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-hdr"><div><div class="card-title">My Wellbeing Ring</div></div></div>
+          <div class="ring-wrap" style="height:130px">
+            <canvas id="myRing" width="120" height="120"></canvas>
+            <div class="ring-center"><span class="ring-val">74</span><span class="ring-lbl">/ 100</span></div>
           </div>
-          <div class="teacher-card">
-            <div class="teacher-ava" style="background:rgba(251,191,36,0.15);color:var(--neutral);">👩🏾‍🏫</div>
-            <div class="teacher-info"><div class="teacher-name">Ms. Apio Grace</div><div class="teacher-role">Mathematics · S2</div></div>
-            <div class="teacher-trend" style="background:rgba(251,191,36,0.12);color:var(--neutral);">→ Watch</div>
+          <div style="text-align:center;margin-top:8px"><span class="pat-badge pb-stable">✓ Stable Pattern</span></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div><div class="card-title">This Month</div></div></div>
+          <div class="prog-item">
+            <div class="prog-meta"><span class="prog-label">😊 Happy / Positive</span><span class="prog-val" style="color:var(--mood-positive)">58%</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="background:linear-gradient(90deg,var(--mood-happy),var(--mood-positive));width:58%"></div></div>
           </div>
-          <div class="teacher-card">
-            <div class="teacher-ava" style="background:rgba(239,68,68,0.15);color:var(--angry);">👨🏽‍🏫</div>
-            <div class="teacher-info"><div class="teacher-name">Mr. Okello Ben</div><div class="teacher-role">Sciences · S4</div></div>
-            <div class="teacher-trend" style="background:rgba(239,68,68,0.12);color:var(--angry);">↓ Declining</div>
+          <div class="prog-item">
+            <div class="prog-meta"><span class="prog-label">😐 Neutral</span><span class="prog-val" style="color:var(--mood-neutral)">24%</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="background:var(--mood-neutral);width:24%"></div></div>
           </div>
-          <div class="teacher-card">
-            <div class="teacher-ava" style="background:rgba(26,122,122,0.15);color:var(--teal-light);">👩🏾‍🏫</div>
-            <div class="teacher-info"><div class="teacher-name">Ms. Namutebi Joy</div><div class="teacher-role">English · S1</div></div>
-            <div class="teacher-trend" style="background:rgba(74,222,128,0.1);color:var(--happy);">↑ Stable</div>
+          <div class="prog-item" style="margin-bottom:0">
+            <div class="prog-meta"><span class="prog-label">😟 Distress</span><span class="prog-val" style="color:var(--mood-angry)">18%</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="background:linear-gradient(90deg,var(--mood-stressed),var(--mood-angry));width:18%"></div></div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ══════════════════════════════════
-         PAGE: DISTRICT / NATIONAL
-    ══════════════════════════════════ -->
-    <div class="page" id="page-district">
+    <div class="card full-row">
+      <div class="card-hdr">
+        <div><div class="card-title">3-Month Trend</div><div class="card-sub">Your personal wellbeing arc</div></div>
+        <span class="chip chip-green">↑ Improving</span>
+      </div>
+      <div class="chart-wrap" style="height:180px"><canvas id="ovTrend"></canvas></div>
+    </div>
+  </div>
 
-      <div class="stats-grid" style="margin-bottom:24px;">
-        <div class="stat-card blue">
-          <div class="stat-label">🏫 Schools Reporting</div>
-          <div class="stat-value" style="color:var(--teal-light)">24</div>
-          <div class="stat-delta delta-up">↑ +3 this week</div>
-        </div>
-        <div class="stat-card green">
-          <div class="stat-label">👥 Students Tracked</div>
-          <div class="stat-value" style="color:var(--happy)">4,821</div>
-          <div class="stat-delta delta-up">↑ +312 this month</div>
-        </div>
-        <div class="stat-card amber">
-          <div class="stat-label">⚠️ Schools Flagged</div>
-          <div class="stat-value" style="color:var(--neutral)">7</div>
-          <div class="stat-delta delta-down">↑ +2 from last week</div>
-        </div>
-        <div class="stat-card red">
-          <div class="stat-label">🚨 Urgent Cases</div>
-          <div class="stat-value" style="color:var(--red-light)">18</div>
-          <div class="stat-delta delta-down">Needs immediate action</div>
-        </div>
+  <!-- ════════════════════════════════
+       PAGE: LOG TODAY
+  ════════════════════════════════ -->
+  <div class="page" id="page-log">
+    <div class="quote-block">
+      <div class="qt-text">Take a moment. Pick a colour. Reflect on your day. <strong>This space is yours</strong> — honest and private.</div>
+      <div class="qt-src">DCI Mood Tracker — Own Your Healing</div>
+    </div>
+
+    <div class="card" style="margin-bottom:22px">
+      <div class="card-strip"></div>
+      <div class="card-hdr">
+        <div><div class="card-title">How are you feeling today?</div><div class="card-sub" id="log-date-label">—</div></div>
       </div>
 
-      <div class="two-col">
-        <div class="card">
-          <div class="card-header">
-            <div><div class="card-title">District Distress Heatmap</div><div class="card-sub">% of students in distress — Central Uganda</div></div>
-          </div>
-          <div class="district-grid" id="districtGrid"></div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <div><div class="card-title">National Trend</div><div class="card-sub">Month-over-month wellbeing index</div></div>
-          </div>
-          <div class="chart-wrap" style="height:240px;">
-            <canvas id="nationalTrendChart"></canvas>
-          </div>
-        </div>
+      <div class="mood-grid" id="logMoodGrid">
+        <div class="mood-btn" data-mood="happy"     onclick="selectMood(this,'log')"><span class="mood-dot-xl" style="background:var(--mood-happy)"></span><span class="mood-label">Happy</span><span class="mood-check">✓</span></div>
+        <div class="mood-btn" data-mood="positive"  onclick="selectMood(this,'log')"><span class="mood-dot-xl" style="background:var(--mood-positive)"></span><span class="mood-label">Positive</span><span class="mood-check">✓</span></div>
+        <div class="mood-btn" data-mood="neutral"   onclick="selectMood(this,'log')"><span class="mood-dot-xl" style="background:var(--mood-neutral)"></span><span class="mood-label">Neutral</span><span class="mood-check">✓</span></div>
+        <div class="mood-btn" data-mood="sick"      onclick="selectMood(this,'log')"><span class="mood-dot-xl" style="background:var(--mood-sick)"></span><span class="mood-label">Sick</span><span class="mood-check">✓</span></div>
+        <div class="mood-btn" data-mood="stressed"  onclick="selectMood(this,'log')"><span class="mood-dot-xl" style="background:var(--mood-stressed)"></span><span class="mood-label">Stressed</span><span class="mood-check">✓</span></div>
+        <div class="mood-btn" data-mood="angry"     onclick="selectMood(this,'log')"><span class="mood-dot-xl" style="background:var(--mood-angry)"></span><span class="mood-label">Angry</span><span class="mood-check">✓</span></div>
+        <div class="mood-btn" data-mood="sad"       onclick="selectMood(this,'log')"><span class="mood-dot-xl" style="background:var(--mood-sad)"></span><span class="mood-label">Sad</span><span class="mood-check">✓</span></div>
+        <div class="mood-btn" data-mood="depressed" onclick="selectMood(this,'log')"><span class="mood-dot-xl" style="background:var(--mood-depressed)"></span><span class="mood-label">Depressed</span><span class="mood-check">✓</span></div>
       </div>
 
+      <div style="margin-top:18px">
+        <label style="font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-light);margin-bottom:7px;display:block">Add a note <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional — stays private)</span></label>
+        <textarea id="logNote" style="width:100%;padding:13px 15px;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font-body);font-size:14px;color:var(--ink);resize:vertical;min-height:80px;outline:none;transition:border-color .2s,box-shadow .2s;line-height:1.55" placeholder="What's on your mind today? What happened? This is your space…" onfocus="this.style.borderColor='var(--teal)';this.style.boxShadow='0 0 0 3px var(--teal-pale)'" onblur="this.style.borderColor='';this.style.boxShadow=''"></textarea>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-primary" onclick="submitLog()" style="flex:1;max-width:220px;justify-content:center">Save Entry</button>
+        <button class="btn btn-ghost" onclick="clearLog()">Clear</button>
+      </div>
+      <div class="log-success" id="logSuccess"><span style="font-size:22px">✅</span><span>Saved! Your entry is recorded. You showed up today — that matters.</span></div>
+    </div>
+
+    <!-- First Aid auto-shows on log -->
+    <div class="firstaid-panel" id="logFirstAid"></div>
+  </div>
+
+  <!-- ════════════════════════════════
+       PAGE: CALENDAR
+  ════════════════════════════════ -->
+  <div class="page" id="page-calendar">
+    <div class="two-col">
       <div class="card">
-        <div class="card-header">
-          <div><div class="card-title">School Leaderboard</div><div class="card-sub">Wellbeing score by school — highest to lowest</div></div>
-          <button class="btn btn-ghost" style="padding:8px 14px;font-size:13px;">Download Report</button>
+        <div class="card-strip"></div>
+        <div class="card-hdr"><div><div class="card-title">March 2025 — Full View</div><div class="card-sub">Each cell is a day. Each colour is an emotion.</div></div></div>
+        <div class="cal-grid" id="calFull"></div>
+        <div class="mood-legend" style="margin-top:14px">
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-happy)"></span>Happy</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-positive)"></span>Positive</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-neutral)"></span>Neutral</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-sick)"></span>Sick</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-stressed)"></span>Stressed</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-angry)"></span>Angry</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-sad)"></span>Sad</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-depressed)"></span>Depressed</div>
         </div>
-        <table class="school-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>School</th>
-              <th>District</th>
-              <th>Students</th>
-              <th>Wellbeing</th>
-              <th>Trend</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="schoolTableBody"></tbody>
-        </table>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-hdr"><div><div class="card-title">Weekly Breakdown</div><div class="card-sub">March average by week</div></div></div>
+          <div class="chart-wrap" style="height:180px"><canvas id="calWeekChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div><div class="card-title">Mood Distribution</div><div class="card-sub">This month in numbers</div></div></div>
+          <div id="calMoodDist" style="display:flex;flex-direction:column;gap:9px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       PAGE: FIRST AID & COPING
+  ════════════════════════════════ -->
+  <div class="page" id="page-firstaid">
+    <div class="quote-block">
+      <div class="qt-text">When you feel something overwhelming, <strong>you don't have to wait for help to arrive</strong>. There are things you can do right now — small, kind, human acts for yourself.</div>
+      <div class="qt-src">DCI Mental Health First Aid</div>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <div style="font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:12px">Select a feeling to see coping steps</div>
+      <div class="mood-grid" id="faMoodSelect">
+        <div class="mood-btn" data-mood="happy"     onclick="showFirstAid('happy',this)"><span class="mood-dot-xl" style="background:var(--mood-happy)"></span><span class="mood-label">Happy</span><span class="mood-check">✓</span></div>
+        <div class="mood-btn" data-mood="positive"  onclick="showFirstAid('positive',this)"><span class="mood-dot-xl" style="background:var(--mood-positive)"></span><span class="mood-label">Positive</span><span class="mood-check">✓</span></div>
+        <div class="mood-btn" data-mood="neutral"   onclick="showFirstAid('neutral',this)"><span class="mood-dot-xl" style="background:var(--mood-neutral)"></span><span class="mood-label">Neutral</span><span class="mood-check">✓</span></div>
+        <div class="mood-btn" data-mood="sick"      onclick="showFirstAid('sick',this)"><span class="mood-dot-xl" style="background:var(--mood-sick)"></span><span class="mood-label">Sick</span><span class="mood-check">✓</span></div>
+        <div class="mood-btn" data-mood="stressed"  onclick="showFirstAid('stressed',this)"><span class="mood-dot-xl" style="background:var(--mood-stressed)"></span><span class="mood-label">Stressed</span><span class="mood-check">✓</span></div>
+        <div class="mood-btn" data-mood="angry"     onclick="showFirstAid('angry',this)"><span class="mood-dot-xl" style="background:var(--mood-angry)"></span><span class="mood-label">Angry</span><span class="mood-check">✓</span></div>
+        <div class="mood-btn" data-mood="sad"       onclick="showFirstAid('sad',this)"><span class="mood-dot-xl" style="background:var(--mood-sad)"></span><span class="mood-label">Sad</span><span class="mood-check">✓</span></div>
+        <div class="mood-btn" data-mood="depressed" onclick="showFirstAid('depressed',this)"><span class="mood-dot-xl" style="background:var(--mood-depressed)"></span><span class="mood-label">Depressed</span><span class="mood-check">✓</span></div>
       </div>
     </div>
 
-    <!-- ══════════════════════════════════
-         PAGE: ALERTS ENGINE
-    ══════════════════════════════════ -->
-    <div class="page" id="page-alerts">
+    <div id="faMainPanel"></div>
+  </div>
 
-      <div class="insight-box">
-        <span class="insight-icon">🧠</span>
-        <div>
-          <div class="insight-title">Presence Drives Data. Data Prevents Crisis.</div>
-          <div class="insight-text">The DCI Early Warning System monitors emotional patterns across Uganda's schools in real time. Every flagged alert below represents a student or cohort that needs human support before the situation escalates. Counsellors and school leaders are the last line of action — this system ensures they act at the right time.</div>
-        </div>
+  <!-- ════════════════════════════════
+       PAGE: COHORT ANALYTICS
+  ════════════════════════════════ -->
+  <div class="page" id="page-cohort">
+    <div class="privacy-banner">
+      <span class="pb-icon">🔒</span>
+      <div>
+        <div class="pb-title">Privacy-Protected Analytics</div>
+        <div class="pb-text">All cohort data shows <strong>numbers only</strong> — no names appear in group views. Roll numbers are only visible to the assigned counsellor. NIN linkage is restricted to the institution's data officer. Aggregated trends are visible to admin without any individual identification.</div>
       </div>
-
-      <div class="stats-grid" style="margin-bottom:24px;">
-        <div class="stat-card red">
-          <div class="stat-label">🔴 Critical</div>
-          <div class="stat-value" style="color:var(--red-light)">3</div>
-          <div class="stat-delta delta-down">Immediate intervention</div>
-        </div>
-        <div class="stat-card amber">
-          <div class="stat-label">🟡 Warning</div>
-          <div class="stat-value" style="color:var(--neutral)">8</div>
-          <div class="stat-delta delta-down">↑ +2 since yesterday</div>
-        </div>
-        <div class="stat-card blue">
-          <div class="stat-label">🔵 Info</div>
-          <div class="stat-value" style="color:var(--teal-light)">14</div>
-          <div class="stat-delta delta-same">→ Monitoring</div>
-        </div>
-        <div class="stat-card green">
-          <div class="stat-label">✅ Resolved</div>
-          <div class="stat-value" style="color:var(--happy)">7</div>
-          <div class="stat-delta delta-up">↑ This week</div>
-        </div>
-      </div>
-
-      <div class="section-header" style="margin-bottom:16px;">
-        <div class="section-title">🔴 Critical Alerts</div>
-        <span class="chip chip-red">Requires Immediate Action</span>
-      </div>
-      <div class="alert-list" id="criticalAlerts"></div>
-
-      <div class="section-header" style="margin:24px 0 16px;">
-        <div class="section-title">🟡 Warning Alerts</div>
-        <span class="chip chip-amber">Monitor Closely</span>
-      </div>
-      <div class="alert-list" id="warningAlerts"></div>
-
-      <div class="section-header" style="margin:24px 0 16px;">
-        <div class="section-title">💡 Recommendations</div>
-        <span class="chip chip-teal">AI Suggested Actions</span>
-      </div>
-      <div class="alert-list" id="infoAlerts"></div>
     </div>
+
+    <div class="stats-grid">
+      <div class="stat-card sc-teal" style="animation-delay:.05s"><span class="stat-icon">👥</span><div class="stat-lbl">Students Tracked</div><div class="stat-val" style="color:var(--teal)">312</div><div class="stat-delta dlt-up">↑ +24 this month</div></div>
+      <div class="stat-card sc-green" style="animation-delay:.10s"><span class="stat-icon">📊</span><div class="stat-lbl">Avg Wellbeing</div><div class="stat-val" style="color:var(--mood-positive)">68</div><div class="stat-delta dlt-up">↑ +4 pts</div></div>
+      <div class="stat-card sc-amber" style="animation-delay:.15s"><span class="stat-icon">⚠️</span><div class="stat-lbl">Flagged IDs</div><div class="stat-val" style="color:var(--mood-stressed)">9</div><div class="stat-delta dlt-down">↑ +2 this week</div></div>
+      <div class="stat-card sc-red" style="animation-delay:.20s"><span class="stat-icon">🔕</span><div class="stat-lbl">Silent 3+ Days</div><div class="stat-val" style="color:var(--mood-angry)">6</div><div class="stat-delta">Silence = signal</div></div>
+    </div>
+
+    <div class="three-col">
+      <div class="card">
+        <div class="card-strip"></div>
+        <div class="card-hdr"><div><div class="card-title">School Mood Distribution</div><div class="card-sub">All 312 tracked students — March 2025</div></div><span class="chip chip-amber">Watch</span></div>
+        <div class="chart-wrap" style="height:230px"><canvas id="cohortDist"></canvas></div>
+        <div class="mood-legend" style="margin-top:12px">
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-happy)"></span>Happy 28%</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-positive)"></span>Positive 18%</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-neutral)"></span>Neutral 22%</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-stressed)"></span>Stressed 14%</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-angry)"></span>Angry 8%</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-sad)"></span>Sad 6%</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--mood-depressed)"></span>Depressed 4%</div>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-hdr"><div><div class="card-title">School Wellbeing</div></div></div>
+          <div class="ring-wrap" style="height:130px"><canvas id="cohortRing" width="120" height="120"></canvas><div class="ring-center"><span class="ring-val">68</span><span class="ring-lbl">/ 100</span></div></div>
+          <div style="text-align:center;margin-top:8px"><span class="pat-badge pb-fluctuating">⚡ Fluctuating</span></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div><div class="card-title">Class Breakdown</div><div class="card-sub">Distress rate by form</div></div></div>
+          <div class="chart-wrap" style="height:160px"><canvas id="classChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card full-row">
+      <div class="card-hdr"><div><div class="card-title">District Heatmap</div><div class="card-sub">Distress concentration — Central Uganda schools</div></div><button class="btn btn-ghost" style="padding:7px 13px;font-size:12px">Export</button></div>
+      <div class="hm-grid" id="districtHM"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       PAGE: COUNSELLOR VIEW
+  ════════════════════════════════ -->
+  <div class="page" id="page-counsellor">
+    <div class="privacy-banner">
+      <span class="pb-icon">🔑</span>
+      <div>
+        <div class="pb-title">Counsellor Access — Restricted View</div>
+        <div class="pb-text">You can see roll numbers and their patterns. To access a student's NIN or contact their next of kin, you must log a formal escalation reason. Every access is audited. Student names are not stored in this system.</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-hdr"><div><div class="card-title">Flagged Student IDs</div><div class="card-sub">Last 7-day mood streak • Roll numbers only</div></div><span class="chip chip-red">9 flagged</span></div>
+        <div id="counsellorList"></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div><div class="card-title">Pattern Summary</div><div class="card-sub">Cohort-level intelligence</div></div></div>
+        <div style="display:flex;flex-direction:column;gap:10px" id="counsellorAlerts"></div>
+      </div>
+    </div>
+
+    <div class="card full-row">
+      <div class="card-hdr"><div><div class="card-title">Trend Overview — All Classes</div><div class="card-sub">Wellbeing index week by week</div></div></div>
+      <div class="chart-wrap" style="height:200px"><canvas id="counsellorTrend"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       PAGE: ALERTS
+  ════════════════════════════════ -->
+  <div class="page" id="page-alerts">
+    <div class="stats-grid" style="margin-bottom:22px">
+      <div class="stat-card sc-red"><span class="stat-icon">🔴</span><div class="stat-lbl">Critical</div><div class="stat-val" style="color:var(--mood-angry)">2</div><div class="stat-delta">Immediate action</div></div>
+      <div class="stat-card sc-amber"><span class="stat-icon">🟡</span><div class="stat-lbl">Warning</div><div class="stat-val" style="color:var(--mood-stressed)">7</div><div class="stat-delta dlt-down">↑ +2 this week</div></div>
+      <div class="stat-card sc-teal"><span class="stat-icon">🔵</span><div class="stat-lbl">Monitoring</div><div class="stat-val" style="color:var(--teal)">11</div><div class="stat-delta">Under watch</div></div>
+      <div class="stat-card sc-green"><span class="stat-icon">✅</span><div class="stat-lbl">Resolved</div><div class="stat-val" style="color:var(--mood-positive)">8</div><div class="stat-delta dlt-up">This month</div></div>
+    </div>
+
+    <div class="sec-hdr"><div class="sec-title">🔴 Critical — Immediate Intervention</div><span class="chip chip-red">2 alerts</span></div>
+    <div id="alerts-critical"></div>
+
+    <div class="sec-hdr" style="margin-top:22px"><div class="sec-title">🟡 Warning — Monitor Closely</div><span class="chip chip-amber">7 alerts</span></div>
+    <div id="alerts-warning"></div>
+
+    <div class="sec-hdr" style="margin-top:22px"><div class="sec-title">💡 Recommended Actions</div><span class="chip chip-teal">AI Suggested</span></div>
+    <div id="alerts-info"></div>
+  </div>
 
   </div><!-- /content -->
 </main>
-
-<!-- PROCESSING OVERLAY -->
-<div class="processing-overlay" id="processingOverlay">
-  <div class="processing-ring"></div>
-  <div class="processing-title">AI Processing Mood Data</div>
-  <div class="processing-step" id="processingStep">Initialising scan engine...</div>
-  <div class="processing-bar-wrap">
-    <div class="processing-bar-fill" id="processingBar"></div>
-  </div>
-  <p style="margin-top:24px;font-size:13px;color:var(--text-dim);max-width:320px;line-height:1.6;text-align:center;">
-    Extracting colour patterns · Building emotional timeline · Identifying risk signals
-  </p>
-</div>
+</div><!-- /app -->
 
 <script>
-// ── DATA ──
-const STUDENTS = [
-  { name:'Aisha Nakato', class:'S3B', flag:'critical', days:[5,4,5,3,2,1,1,2,1,1,3,5,5,4,2,1,1,2,2,1,1,1,2,3,2,1,1,2,2,1] },
-  { name:'Brian Tumwine', class:'S3B', flag:'warning', days:[4,4,3,4,3,3,4,4,3,3,4,4,3,4,3,3,3,3,4,3,3,3,4,4,3,3,3,4,3,3] },
-  { name:'Christine Auma', class:'S3B', flag:'good', days:[5,5,5,4,5,5,4,4,5,5,5,4,4,4,5,5,5,5,4,5,5,5,4,5,5,5,5,4,5,5] },
-  { name:'David Ssali', class:'S3A', flag:'warning', days:[3,2,3,2,2,2,3,2,3,2,3,2,2,3,2,2,3,3,2,2,3,2,2,2,3,2,3,2,2,2] },
-  { name:'Esther Nakyeyune', class:'S3A', flag:'good', days:[5,4,5,5,4,5,5,5,4,5,4,5,5,5,4,4,5,5,4,5,5,4,4,5,5,5,5,4,5,5] },
-  { name:'Francis Bwire', class:'S3B', flag:'critical', days:[1,1,2,1,1,1,2,1,1,1,2,1,1,1,2,1,1,2,1,1,1,1,2,1,1,1,1,2,1,1] },
-  { name:'Grace Namusisi', class:'S3C', flag:'good', days:[4,5,5,4,4,5,5,4,4,5,5,4,4,5,5,4,4,4,5,5,5,4,5,5,4,4,5,5,4,5] },
-  { name:'Henry Mubiru', class:'S3C', flag:'warning', days:[3,3,2,3,2,3,3,2,3,3,2,3,3,2,3,2,3,3,2,3,3,2,3,3,2,2,3,3,2,3] },
-];
-
-const DISTRICTS = [
-  { name:'Kampala Central', pct:22, cls:'heat-high' },
-  { name:'Wakiso', pct:14, cls:'heat-medium' },
-  { name:'Mukono', pct:31, cls:'heat-critical' },
-  { name:'Jinja', pct:18, cls:'heat-high' },
-  { name:'Gulu', pct:8, cls:'heat-low' },
-  { name:'Mbarara', pct:6, cls:'heat-good' },
-  { name:'Masaka', pct:12, cls:'heat-medium' },
-  { name:'Mbale', pct:9, cls:'heat-low' },
-  { name:'Soroti', pct:5, cls:'heat-good' },
-];
-
-const SCHOOLS = [
-  { rank:1, name:'St. Mary\'s College Kisubi', district:'Wakiso', students:445, score:82, trend:[70,73,76,78,80,82], status:'good' },
-  { rank:2, name:'Gayaza High School', district:'Wakiso', students:512, score:79, trend:[72,74,75,77,78,79], status:'good' },
-  { rank:3, name:'Greenhill Academy', district:'Kampala', students:312, score:68, trend:[75,72,70,69,68,68], status:'watch' },
-  { rank:4, name:'Kibuli SSS', district:'Kampala', students:398, score:65, trend:[68,67,66,65,65,65], status:'watch' },
-  { rank:5, name:'Kololo SS', district:'Kampala', students:287, score:58, trend:[70,66,62,60,58,58], status:'critical' },
-  { rank:6, name:'Nabisunsa Girls', district:'Kampala', students:334, score:72, trend:[68,70,71,72,72,72], status:'good' },
-  { rank:7, name:'Ntare School', district:'Mbarara', students:421, score:77, trend:[74,75,76,76,77,77], status:'good' },
-];
-
-const CRITICAL_ALERTS = [
-  { icon:'🔴', title:'3 Students Flagged for Immediate Intervention', body:'Aisha Nakato (S3B), Francis Bwire (S3B), and one S4A student have each recorded 7+ consecutive days of distress-coded entries. Counsellor outreach is overdue.', time:'Today · 09:14 AM · Greenhill Academy', type:'critical' },
-  { icon:'🔴', title:'Kololo SS — School-Wide Decline Detected', body:'Overall wellbeing score dropped 12 points over 6 weeks. 34% of students now in the distress range. District-level review recommended.', time:'Today · 08:30 AM · Kololo SS, Kampala', type:'critical' },
-  { icon:'🔴', title:'Teacher Wellbeing: Mr. Okello Ben — Urgent', body:'Mr. Okello has self-reported distressed states for 14 consecutive days. HR and school admin have not yet been notified. Intervention required.', time:'Yesterday · 4:45 PM · Greenhill Academy', type:'critical' },
-];
-
-const WARNING_ALERTS = [
-  { icon:'🟡', title:'Mukono District — Highest Distress Rate (31%)', body:'Mukono District has the highest student distress rate in the region. 5 schools require closer monitoring this term.', time:'2 days ago · District Intelligence Layer', type:'warning' },
-  { icon:'🟡', title:'Exam Season Stress Spike Detected', body:'Senior 3 and Senior 4 classes across 11 schools show elevated stress/angry patterns — likely exam-related. Wellness sessions recommended.', time:'3 days ago · Regional Pattern Engine', type:'warning' },
-  { icon:'🟡', title:'8 Students — Monday Pattern Detected', body:'Eight students across 3 schools show a consistent pattern of distress on Mondays specifically. Home environment investigation suggested.', time:'4 days ago · Pattern Analysis', type:'warning' },
-];
-
-const INFO_ALERTS = [
-  { icon:'💡', title:'Schedule a School-Wide Wellness Day', body:'Based on current stress trends in S3 and S4, a structured wellness activity day could improve scores by an estimated 10–15%. St. Mary\'s saw similar results in February.', time:'Recommendation · AI Engine', type:'info' },
-  { icon:'💡', title:'Enable Weekly Check-In Prompts', body:'Schools with weekly counsellor check-ins show 40% lower crisis escalation rates. Consider piloting structured group sessions at Greenhill and Kololo.', time:'Recommendation · Best Practice Data', type:'info' },
-  { icon:'💡', title:'Parent Engagement Correlated with Better Outcomes', body:'Data from Term 3 2024 shows that schools running parent communication sessions had 23% lower distress rates. Consider a parent briefing on mood tracker findings.', time:'Recommendation · Historical Analysis', type:'info' },
-];
-
-// ── NAVIGATION ──
-const PAGE_META = {
-  upload: { title: 'Data Input', sub: 'Upload or simulate a mood tracker scan to begin' },
-  student: { title: 'Student View', sub: 'Individual mood timelines and pattern summaries' },
-  school: { title: 'School View', sub: 'Greenhill Academy — emotional health overview' },
-  district: { title: 'District & National View', sub: 'Heatmap intelligence across Uganda\'s schools' },
-  alerts: { title: 'Alerts Engine', sub: '5 active alerts requiring counsellor attention' },
+// ══════════════════════════════════════════
+// MOOD SYSTEM
+// ══════════════════════════════════════════
+const MOODS = {
+  happy:     { color:'#f5c518', label:'Happy',     emoji:'😊' },
+  positive:  { color:'#27ae60', label:'Positive',  emoji:'🌿' },
+  neutral:   { color:'#64b5f6', label:'Neutral',   emoji:'😐' },
+  sick:      { color:'#8d6e63', label:'Sick',      emoji:'🤒' },
+  stressed:  { color:'#f57c00', label:'Stressed',  emoji:'😤' },
+  angry:     { color:'#e53935', label:'Angry',     emoji:'😡' },
+  sad:       { color:'#e91e8c', label:'Sad',       emoji:'💗' },
+  depressed: { color:'#263238', label:'Depressed', emoji:'🌑' },
+  none:      { color:'', label:'Not logged', emoji:'' },
 };
 
-let chartsInit = {};
+// ── Mental Health First Aid data ──
+const FIRST_AID = {
+  happy: {
+    icon:'😊', title:'You\'re feeling Happy!', sub:'Hold this. Share it. Let it grow.',
+    steps:[
+      { t:'Write it down', b:'Note what made you happy today — even one sentence. You\'ll thank yourself on harder days.' },
+      { t:'Share it with someone', b:'Tell a friend or family member something good that happened. Joy multiplies when shared.' },
+      { t:'Do something kind', b:'Happy days are the best days to help someone else. Even a small act creates a ripple.' },
+    ], emergency: false
+  },
+  positive: {
+    icon:'🌿', title:'You\'re feeling Positive', sub:'Momentum is on your side. Use it well.',
+    steps:[
+      { t:'Tackle something you\'ve been avoiding', b:'Positive energy is fuel. Pick one small task you\'ve been putting off.' },
+      { t:'Express gratitude', b:'Take 2 minutes to think of three things you\'re grateful for today.' },
+      { t:'Set a small goal', b:'Ride this energy into tomorrow by writing down one thing you want to do next.' },
+    ], emergency: false
+  },
+  neutral: {
+    icon:'😐', title:'You\'re feeling Neutral', sub:'Flat days are normal. They don\'t require fixing.',
+    steps:[
+      { t:'Go outside — even briefly', b:'Five minutes of fresh air or sunlight can shift a flat mood without forcing anything.' },
+      { t:'Drink water and eat something', b:'Neutral often means you\'re depleted. Basic care goes further than you think.' },
+      { t:'Do one thing you enjoy', b:'Not to fix anything — just for yourself. A song, a game, a conversation.' },
+    ], emergency: false
+  },
+  sick: {
+    icon:'🤒', title:'You\'re feeling Sick', sub:'Your body is asking for care. Listen to it.',
+    steps:[
+      { t:'Rest — not just lying down', b:'True rest means no screens, no pressure. If you can sleep, sleep.' },
+      { t:'Tell someone you\'re unwell', b:'A teacher, guardian, or a friend. You don\'t have to manage illness alone.' },
+      { t:'Hydrate and eat lightly', b:'Even if you have no appetite, small sips and light food help your body recover.' },
+    ], emergency: false
+  },
+  stressed: {
+    icon:'😤', title:'You\'re feeling Stressed', sub:'Stress is a signal — not a verdict. Let\'s work with it.',
+    steps:[
+      { t:'Name what is stressing you', b:'Write it down or say it out loud. Naming the thing reduces its power over you immediately.' },
+      { t:'Box breathing — 4 counts', b:'Breathe in 4 counts, hold 4, out 4, hold 4. Do this three times. Your nervous system responds.' },
+      { t:'Break it into one small step', b:'You can\'t solve everything today. What is one small thing you CAN do right now?' },
+      { t:'Talk to your guidance teacher', b:'If the stress is ongoing, you don\'t need to carry it alone. Counsellors are trained for this.' },
+    ], emergency: false
+  },
+  angry: {
+    icon:'😡', title:'You\'re feeling Angry', sub:'Anger is valid. What you do with it matters.',
+    steps:[
+      { t:'Step away from the situation', b:'Even two minutes of physical distance gives your brain time to downshift. Walk somewhere quiet.' },
+      { t:'Don\'t act on it yet', b:'Most things that feel urgent when angry are not. Give yourself permission to wait 10 minutes.' },
+      { t:'Write or draw it out', b:'Rage on paper hurts no one. Get it out of your head and onto something external.' },
+      { t:'When you\'re calmer — talk it through', b:'With a trusted person, a counsellor, or your champion. Anger that stays inside becomes something heavier.' },
+    ], emergency: false
+  },
+  sad: {
+    icon:'💗', title:'You\'re feeling Sad', sub:'Sadness asks to be felt, not fixed.',
+    steps:[
+      { t:'Let yourself feel it — for a moment', b:'Sadness isn\'t weakness. Crying is not a breakdown. Give it ten minutes without trying to stop it.' },
+      { t:'Reach out to one person', b:'You don\'t have to explain everything. Just saying "I\'m having a hard day" to someone who cares helps.' },
+      { t:'Do something gentle', b:'Listen to music, sit outside, draw something. Not to be happy — just to be kind to yourself.' },
+      { t:'If it persists, speak to your counsellor', b:'If you\'ve felt sad for many days in a row, you deserve support. This is what counsellors are here for.' },
+    ], emergency: false
+  },
+  depressed: {
+    icon:'🌑', title:'You\'ve logged Depressed', sub:'This takes courage to name. You are not alone in this.',
+    steps:[
+      { t:'Stay somewhere safe — right now', b:'If you are in a safe place, stay there. If not, go somewhere you feel physically safe first.' },
+      { t:'Tell one person how you\'re feeling', b:'A teacher, a parent, a friend — anyone. You don\'t have to explain everything. Just say "I need someone right now."' },
+      { t:'Do not isolate yourself today', b:'Even being in a room with other people, without talking, is better than being completely alone right now.' },
+      { t:'Contact your school counsellor today', b:'They are bound by confidentiality and specifically trained for this. Ask a teacher to help you reach them if needed.' },
+    ], emergency: true
+  },
+};
 
-function navigate(page) {
+// ── Calendar data ──
+const CAL_DATA = [
+  'happy','positive','happy','neutral','positive','positive','happy',
+  'neutral','neutral','stressed','sad','stressed','positive','happy',
+  'happy','positive','neutral','positive','positive','happy',
+  'neutral','stressed','stressed','neutral','positive','happy',
+  'happy','neutral','none','none'
+];
+
+// ── Student cohort (roll numbers only) ──
+const COHORT = [
+  { id:'GHA-25-0101', cls:'S3A', flag:'critical', days:['angry','sad','depressed','depressed','sad','angry','depressed'] },
+  { id:'GHA-25-0142', cls:'S3B', flag:'ok',       days:['happy','positive','happy','neutral','positive','happy','positive'] },
+  { id:'GHA-25-0167', cls:'S3B', flag:'watch',    days:['neutral','stressed','neutral','stressed','neutral','stressed','neutral'] },
+  { id:'GHA-25-0203', cls:'S3A', flag:'ok',       days:['happy','happy','positive','happy','positive','positive','happy'] },
+  { id:'GHA-25-0218', cls:'S3C', flag:'silent',   days:['stressed','neutral','none','none','none','none','none'] },
+  { id:'GHA-25-0244', cls:'S3C', flag:'critical', days:['depressed','depressed','sad','depressed','sad','none','none'] },
+  { id:'GHA-25-0289', cls:'S4A', flag:'watch',    days:['neutral','sad','neutral','sad','stressed','neutral','sad'] },
+  { id:'GHA-25-0312', cls:'S4B', flag:'ok',       days:['positive','happy','positive','happy','positive','positive','happy'] },
+];
+
+// ══════════════════════════════════════════
+// ONBOARDING
+// ══════════════════════════════════════════
+let obMood = null, currentStep = 1;
+
+function obNext(step) {
+  document.getElementById('step' + currentStep).classList.remove('active');
+  document.getElementById('dot' + currentStep).classList.remove('active');
+  document.getElementById('dot' + currentStep).classList.add('done');
+  currentStep = step;
+  document.getElementById('step' + step).classList.add('active');
+  document.getElementById('dot' + step).classList.add('active');
+}
+
+function obSelectMood(btn) {
+  document.querySelectorAll('#ob-mood-grid .mood-btn').forEach(b => {
+    b.classList.remove('selected');
+    b.style.borderColor = 'transparent';
+  });
+  btn.classList.add('selected');
+  const m = MOODS[btn.dataset.mood];
+  btn.style.borderColor = m.color;
+  obMood = btn.dataset.mood;
+}
+
+function launchApp() {
+  const rollno = document.getElementById('ob-rollno').value.trim() || 'GHA-2025-0142';
+  const cls    = document.getElementById('ob-class').value.trim() || 'S3B';
+  const inst   = document.getElementById('ob-inst').value.trim() || 'Greenhill Academy';
+  const role   = document.getElementById('ob-role').value;
+
+  // Inject into UI
+  document.getElementById('sb-id').textContent   = rollno;
+  document.getElementById('sb-inst').textContent = inst;
+  document.getElementById('sb-ava').textContent  = rollno.charAt(0) + (rollno.split('-')[2]?.slice(-2) || 'ST');
+  document.getElementById('hero-inst').textContent = inst;
+  document.getElementById('hero-id-pill').textContent = 'ID: ' + rollno;
+
+  const modeMap = { student:'Student', counsellor:'Counsellor', admin:'Admin' };
+  const modeClsMap = { student:'mode-student', counsellor:'mode-counsellor', admin:'mode-admin' };
+  const mc = document.getElementById('sb-mode');
+  mc.textContent = modeMap[role];
+  mc.className = 'sb-mode-chip ' + modeClsMap[role];
+
+  document.getElementById('onboarding').classList.add('exit');
+  setTimeout(() => {
+    document.getElementById('onboarding').style.display = 'none';
+    const app = document.getElementById('app');
+    app.style.display = 'block';
+    setTimeout(() => {
+      app.classList.add('visible');
+      initCharts();
+      buildCalendars();
+      buildCohortList();
+      buildCounsellorList();
+      buildAlerts();
+      buildDistrictHM();
+      buildMoodDist();
+      animatePBars();
+      document.getElementById('log-date-label').textContent = new Date().toLocaleDateString('en-UG', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    }, 80);
+  }, 560);
+}
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+const PAGE_META = {
+  overview:   ['Overview',           'Your wellbeing at a glance'],
+  log:        ['Log Today',          'Own your healing. Colour your feelings.'],
+  calendar:   ['My Calendar',        'Your 30-day emotional picture'],
+  firstaid:   ['First Aid & Coping', 'Personal steps for every feeling'],
+  cohort:     ['Cohort Analytics',   'School-wide trends — privacy protected'],
+  counsellor: ['Counsellor View',    'Flagged roll numbers — restricted access'],
+  alerts:     ['Alerts Engine',      '4 active alerts requiring attention'],
+};
+
+function nav(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => {
-    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes(page)) {
-      n.classList.add('active');
-    }
+    n.classList.toggle('active', n.getAttribute('onclick')?.includes("'" + page + "'"));
   });
-  document.getElementById('page-title').textContent = PAGE_META[page].title;
-  document.getElementById('page-sub').textContent = PAGE_META[page].sub;
-
-  // Close sidebar on mobile
+  const m = PAGE_META[page] || [page,''];
+  document.getElementById('pg-title').textContent = m[0];
+  document.getElementById('pg-sub').textContent   = m[1];
   if (window.innerWidth < 768) toggleSidebar(false);
+  setTimeout(animatePBars, 60);
+}
 
-  // Init charts lazily
+function toggleSidebar(force) {
+  const sb = document.getElementById('sidebar'), ov = document.getElementById('sidebarOverlay');
+  if (force === false || sb.classList.contains('open')) { sb.classList.remove('open'); ov.classList.remove('open'); }
+  else { sb.classList.add('open'); ov.classList.add('open'); }
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isDark ? '🌙 Dark Mode' : '☀️ Light Mode';
+  // Reinit charts on theme change
+  setTimeout(() => { Object.keys(chartInstances).forEach(k => { chartInstances[k]?.destroy(); }); chartInstances = {}; initCharts(); }, 50);
+}
+
+// ══════════════════════════════════════════
+// MOOD LOG
+// ══════════════════════════════════════════
+let selectedLogMood = null;
+
+function selectMood(btn, grid) {
+  const parent = grid === 'log' ? document.getElementById('logMoodGrid') : btn.closest('.mood-grid');
+  parent.querySelectorAll('.mood-btn').forEach(b => {
+    b.classList.remove('selected');
+    b.style.borderColor = 'transparent';
+  });
+  btn.classList.add('selected');
+  const m = MOODS[btn.dataset.mood];
+  btn.style.borderColor = m.color;
+  if (grid === 'log') {
+    selectedLogMood = btn.dataset.mood;
+    showFirstAidInLog(btn.dataset.mood);
+  }
+}
+
+function showFirstAidInLog(mood) {
+  const panel = document.getElementById('logFirstAid');
+  panel.classList.add('visible');
+  renderFirstAid(panel, mood, true);
+}
+
+function submitLog() {
+  if (!selectedLogMood) { alert('Please select how you\'re feeling first.'); return; }
+  const succ = document.getElementById('logSuccess');
+  succ.style.display = 'flex';
   setTimeout(() => {
-    if (page === 'student' && !chartsInit.student) { initStudentCharts(); chartsInit.student = true; }
-    if (page === 'school' && !chartsInit.school) { initSchoolCharts(); chartsInit.school = true; }
-    if (page === 'district' && !chartsInit.district) { initDistrictCharts(); chartsInit.district = true; }
-    if (page === 'alerts' && !chartsInit.alerts) { buildAlerts(); chartsInit.alerts = true; }
-    animateProgressBars();
-  }, 50);
+    succ.style.display = 'none';
+    selectedLogMood = null;
+    document.getElementById('logMoodGrid').querySelectorAll('.mood-btn').forEach(b => { b.classList.remove('selected'); b.style.borderColor = 'transparent'; });
+    document.getElementById('logNote').value = '';
+    document.getElementById('logFirstAid').classList.remove('visible');
+  }, 4000);
 }
 
-function toggleSidebar(forceClose) {
-  const sb = document.getElementById('sidebar');
-  const ov = document.getElementById('sidebarOverlay');
-  if (forceClose === false || sb.classList.contains('open')) {
-    sb.classList.remove('open');
-    ov.classList.remove('open');
-  } else {
-    sb.classList.add('open');
-    ov.classList.add('open');
-  }
+function clearLog() {
+  selectedLogMood = null;
+  document.getElementById('logMoodGrid').querySelectorAll('.mood-btn').forEach(b => { b.classList.remove('selected'); b.style.borderColor = 'transparent'; });
+  document.getElementById('logNote').value = '';
+  document.getElementById('logFirstAid').classList.remove('visible');
 }
 
-function setStudentTab(btn, tabId) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  ['tab-timeline','tab-profile','tab-allstudents'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = id === tabId ? 'block' : 'none';
-  });
-  if (tabId === 'tab-allstudents') buildStudentList();
-  if (tabId === 'tab-profile' && !chartsInit.profile) {
-    setTimeout(() => { initProfileChart(); chartsInit.profile = true; }, 50);
-  }
+// ══════════════════════════════════════════
+// FIRST AID
+// ══════════════════════════════════════════
+function showFirstAid(mood, btn) {
+  document.querySelectorAll('#faMoodSelect .mood-btn').forEach(b => { b.classList.remove('selected'); b.style.borderColor = 'transparent'; });
+  btn.classList.add('selected');
+  btn.style.borderColor = MOODS[mood].color;
+  const panel = document.getElementById('faMainPanel');
+  renderFirstAid(panel, mood, false);
 }
 
-// ── SIMULATION ──
-function handleFile(e) {
-  if (e.target.files[0]) startSimulation();
-}
-function handleDrop(e) {
-  e.preventDefault();
-  if (e.dataTransfer.files[0]) startSimulation();
-}
+function renderFirstAid(panel, mood, compact) {
+  const fa = FIRST_AID[mood];
+  if (!fa) return;
+  const stepsHTML = fa.steps.map((s, i) => `
+    <div class="fa-step" style="animation-delay:${i*0.08}s">
+      <div class="fa-step-num">${i+1}</div>
+      <div><div class="fa-step-title">${s.t}</div><div class="fa-step-body">${s.b}</div></div>
+    </div>`).join('');
 
-function startSimulation() {
-  const overlay = document.getElementById('processingOverlay');
-  const step = document.getElementById('processingStep');
-  const bar = document.getElementById('processingBar');
-  overlay.classList.add('visible');
-  const steps = [
-    'Detecting mood tracker grid...',
-    'Extracting colour patterns...',
-    'Mapping colours to emotions...',
-    'Building daily mood log...',
-    'Detecting weekly trends...',
-    'Running risk analysis...',
-    'Flagging anomalous patterns...',
-    'Generating AI insights...',
-    'Finalising dashboard...',
-  ];
-  let i = 0;
-  const interval = setInterval(() => {
-    step.textContent = steps[i] || 'Complete.';
-    bar.style.width = ((i + 1) / steps.length * 100) + '%';
-    i++;
-    if (i >= steps.length) {
-      clearInterval(interval);
-      setTimeout(() => {
-        overlay.classList.remove('visible');
-        bar.style.width = '0%';
-        navigate('student');
-      }, 600);
-    }
-  }, 420);
+  const emergencyHTML = fa.emergency ? `
+    <button class="emergency-btn" onclick="alert('In a crisis, please speak to your guidance counsellor, go to the nearest trusted adult, or call the Uganda Mental Health Helpline: 0800-21-21-21 (toll free).')">
+      🆘 I need to talk to someone right now
+    </button>
+    <div style="text-align:center;margin-top:10px;font-size:12px;color:var(--ink-faint)">Uganda Mental Health Helpline: <strong style="color:var(--teal)">0800-21-21-21</strong> (toll free, 24/7)</div>
+  ` : '';
+
+  panel.innerHTML = `
+    <div class="firstaid-panel visible">
+      <div class="fa-header">
+        <span class="fa-icon">${fa.icon}</span>
+        <div><div class="fa-title">${fa.title}</div><div class="fa-sub">${fa.sub}</div></div>
+      </div>
+      <div class="fa-steps">${stepsHTML}</div>
+      ${emergencyHTML}
+    </div>`;
 }
 
-// ── CHARTS ──
-const CHART_DEFAULTS = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: { legend: { display: false } },
-};
-
-function chartFont() { return { family: "'DM Sans', sans-serif" }; }
-
-function initStudentCharts() {
-  // Timeline
-  const moodColors = [
-    '#ef4444','#3b82f6','#f97316','#fbbf24','#4ade80','#ef4444','#60a5fa',
-    '#4ade80','#fbbf24','#ef4444','#ef4444','#3b82f6','#3b82f6','#fbbf24',
-    '#4ade80','#4ade80','#fbbf24','#ef4444','#3b82f6','#3b82f6','#ef4444',
-    '#f97316','#fbbf24','#3b82f6','#3b82f6','#ef4444','#fbbf24','#4ade80',
-    '#3b82f6','#ef4444'
-  ];
-  const scores = [2,1,2,1,1,1,2,4,3,1,1,1,1,3,4,4,3,2,1,1,1,2,3,2,1,1,2,4,1,1];
-  const days = Array.from({length:30},(_,i)=>i+1);
-
-  new Chart(document.getElementById('studentTimelineChart'), {
-    type: 'bar',
-    data: {
-      labels: days,
-      datasets: [{
-        data: scores,
-        backgroundColor: moodColors,
-        borderRadius: 4,
-        borderSkipped: false,
-      }]
-    },
-    options: {
-      ...CHART_DEFAULTS,
-      scales: {
-        x: { grid: { color: 'rgba(245,240,232,0.04)' }, ticks: { color: 'rgba(245,240,232,0.4)', font: { size: 10, ...chartFont() } } },
-        y: { grid: { color: 'rgba(245,240,232,0.04)' }, ticks: { display: false }, min: 0, max: 5 }
-      }
-    }
-  });
-
-  // Weekly breakdown
-  new Chart(document.getElementById('weeklyBreakdownChart'), {
-    type: 'line',
-    data: {
-      labels: ['Week 1','Week 2','Week 3','Week 4'],
-      datasets: [
-        { label:'Happy', data:[4,3,2,1], borderColor:'#4ade80', backgroundColor:'rgba(74,222,128,0.1)', tension:0.4, fill:true, pointRadius:4, pointBackgroundColor:'#4ade80' },
-        { label:'Distress', data:[1,2,4,5], borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.08)', tension:0.4, fill:true, pointRadius:4, pointBackgroundColor:'#ef4444' },
-      ]
-    },
-    options: {
-      ...CHART_DEFAULTS,
-      plugins: { legend: { display: true, labels: { color: 'rgba(245,240,232,0.5)', font: { size: 11, ...chartFont() }, boxWidth: 10, boxHeight: 10 } } },
-      scales: {
-        x: { grid: { color: 'rgba(245,240,232,0.04)' }, ticks: { color: 'rgba(245,240,232,0.4)', font: { size: 11, ...chartFont() } } },
-        y: { grid: { color: 'rgba(245,240,232,0.04)' }, ticks: { color: 'rgba(245,240,232,0.4)', font: { size: 11, ...chartFont() } }, min:0, max:7 }
-      }
-    }
-  });
+// ══════════════════════════════════════════
+// CALENDARS
+// ══════════════════════════════════════════
+function buildCalendars() {
+  buildCalGrid('ov-cal');
+  buildCalGrid('calFull');
 }
 
-function initProfileChart() {
-  new Chart(document.getElementById('threeMonthChart'), {
-    type: 'line',
-    data: {
-      labels: ['Jan','Feb','Mar'],
-      datasets: [{
-        label:'Wellbeing Score',
-        data:[72, 58, 38],
-        borderColor:'#ef4444',
-        backgroundColor:'rgba(239,68,68,0.08)',
-        tension:0.4, fill:true, pointRadius:6,
-        pointBackgroundColor:'#ef4444',
-        borderWidth:2
-      }]
-    },
-    options: {
-      ...CHART_DEFAULTS,
-      scales: {
-        x: { grid: { color: 'rgba(245,240,232,0.04)' }, ticks: { color: 'rgba(245,240,232,0.5)', font: chartFont() } },
-        y: { grid: { color: 'rgba(245,240,232,0.04)' }, ticks: { color: 'rgba(245,240,232,0.4)', font: chartFont() }, min:0, max:100 }
-      }
-    }
-  });
-}
-
-function initSchoolCharts() {
-  new Chart(document.getElementById('schoolDistChart'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Happy','Positive','Neutral','Bored','Sick','Stressed','Angry','Sad','Depressed'],
-      datasets: [{
-        data: [28,13,16,12,6,8,5,7,5],
-        backgroundColor: ['#4ade80','#86efac','#fbbf24','#f59e0b','#fb923c','#f97316','#ef4444','#60a5fa','#3b82f6'],
-        borderWidth: 0, hoverOffset: 6
-      }]
-    },
-    options: {
-      ...CHART_DEFAULTS,
-      cutout: '65%',
-      plugins: { legend: { display: false } }
-    }
-  });
-
-  new Chart(document.getElementById('wellbeingDonut'), {
-    type: 'doughnut',
-    data: {
-      datasets: [{
-        data: [68, 32],
-        backgroundColor: ['#1a7a7a','rgba(245,240,232,0.06)'],
-        borderWidth: 0,
-      }]
-    },
-    options: { ...CHART_DEFAULTS, cutout: '78%', plugins: { legend: { display: false } } }
-  });
-
-  new Chart(document.getElementById('classCompareChart'), {
-    type: 'bar',
-    data: {
-      labels: ['S1','S2','S3','S4','S5','S6'],
-      datasets: [
-        { label:'Happy', data:[62,58,40,45,52,55], backgroundColor:'rgba(74,222,128,0.7)', borderRadius:4, borderSkipped:false },
-        { label:'Distress', data:[10,14,28,22,18,16], backgroundColor:'rgba(239,68,68,0.6)', borderRadius:4, borderSkipped:false },
-      ]
-    },
-    options: {
-      ...CHART_DEFAULTS,
-      plugins: { legend: { display: true, labels: { color:'rgba(245,240,232,0.5)', font:{ size:11, ...chartFont() }, boxWidth:10, boxHeight:10 } } },
-      scales: {
-        x: { stacked:false, grid:{ color:'rgba(245,240,232,0.04)' }, ticks:{ color:'rgba(245,240,232,0.5)', font: chartFont() } },
-        y: { grid:{ color:'rgba(245,240,232,0.04)' }, ticks:{ color:'rgba(245,240,232,0.4)', font: chartFont() }, max:100 }
-      }
-    }
-  });
-}
-
-function initDistrictCharts() {
-  // Build district grid
-  const grid = document.getElementById('districtGrid');
+function buildCalGrid(id) {
+  const grid = document.getElementById(id);
+  if (!grid) return;
   grid.innerHTML = '';
-  DISTRICTS.forEach((d, i) => {
-    const el = document.createElement('div');
-    el.className = `district-cell ${d.cls}`;
-    el.style.animationDelay = (i * 0.06) + 's';
-    el.innerHTML = `<div class="district-pct">${d.pct}%</div><div class="district-name">${d.name}</div><div class="district-sub">distressed</div>`;
-    grid.appendChild(el);
+  const days = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  days.forEach(d => {
+    const h = document.createElement('div');
+    h.className = 'cal-day-hdr'; h.textContent = d;
+    grid.appendChild(h);
   });
-
-  // National trend
-  new Chart(document.getElementById('nationalTrendChart'), {
-    type: 'line',
-    data: {
-      labels: ['Oct','Nov','Dec','Jan','Feb','Mar'],
-      datasets: [
-        { label:'Wellbeing Index', data:[71,69,72,68,65,64], borderColor:'#1a7a7a', backgroundColor:'rgba(26,122,122,0.1)', tension:0.4, fill:true, pointRadius:4, pointBackgroundColor:'#1a7a7a', borderWidth:2 },
-        { label:'Distress Rate %', data:[14,16,13,18,20,21], borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.06)', tension:0.4, fill:true, pointRadius:4, pointBackgroundColor:'#ef4444', borderWidth:2 },
-      ]
-    },
-    options: {
-      ...CHART_DEFAULTS,
-      plugins: { legend: { display:true, labels:{ color:'rgba(245,240,232,0.5)', font:{ size:11, ...chartFont() }, boxWidth:10, boxHeight:10 } } },
-      scales: {
-        x: { grid:{ color:'rgba(245,240,232,0.04)' }, ticks:{ color:'rgba(245,240,232,0.5)', font: chartFont() } },
-        y: { grid:{ color:'rgba(245,240,232,0.04)' }, ticks:{ color:'rgba(245,240,232,0.4)', font: chartFont() } }
-      }
-    }
-  });
-
-  // School table
-  const tbody = document.getElementById('schoolTableBody');
-  tbody.innerHTML = '';
-  SCHOOLS.forEach(s => {
-    const statusChip = s.status === 'good'
-      ? `<span class="chip chip-green">✓ Stable</span>`
-      : s.status === 'watch'
-      ? `<span class="chip chip-amber">⚠ Watch</span>`
-      : `<span class="chip chip-red">🚨 Critical</span>`;
-    const trendColor = s.status === 'good' ? 'var(--happy)' : s.status === 'watch' ? 'var(--neutral)' : 'var(--red-light)';
-    const lastVal = s.trend[s.trend.length - 1];
-    const prevVal = s.trend[s.trend.length - 2];
-    const arrow = lastVal >= prevVal ? '↑' : '↓';
-    const scoreColor = s.score >= 75 ? 'var(--happy)' : s.score >= 60 ? 'var(--neutral)' : 'var(--red-light)';
-    tbody.innerHTML += `<tr>
-      <td style="color:var(--text-dim);font-family:var(--font-mono)">${s.rank}</td>
-      <td style="font-weight:600">${s.name}</td>
-      <td style="color:var(--text-muted)">${s.district}</td>
-      <td style="font-family:var(--font-mono)">${s.students}</td>
-      <td style="font-family:var(--font-display);font-weight:700;color:${scoreColor};font-size:18px">${s.score}</td>
-      <td style="color:${trendColor};font-weight:600">${arrow} ${lastVal}</td>
-      <td>${statusChip}</td>
-    </tr>`;
+  // March 2025 starts on Saturday (idx 6)
+  for (let i = 0; i < 6; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'cal-cell cal-cell-empty';
+    grid.appendChild(empty);
+  }
+  CAL_DATA.forEach((mood, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell';
+    const c = mood === 'none' ? '' : MOODS[mood]?.color || '';
+    cell.style.background = c || 'var(--bg3)';
+    if (!c) cell.style.border = '1px solid var(--border2)';
+    cell.title = `March ${i+1}: ${MOODS[mood]?.label || 'Not logged'}`;
+    const num = document.createElement('div');
+    num.className = 'cal-num'; num.textContent = i + 1;
+    cell.appendChild(num);
+    cell.onmouseenter = () => { cell.style.transform = 'scale(1.18)'; cell.style.zIndex = '2'; };
+    cell.onmouseleave = () => { cell.style.transform = ''; cell.style.zIndex = ''; };
+    grid.appendChild(cell);
   });
 }
 
-function buildStudentList() {
-  const list = document.getElementById('studentList');
-  if (list.children.length > 0) return;
-  const names = ['AN','BT','CA','DS','EN','FB','GN','HM'];
-  const colors = ['#1a7a7a','#f97316','#4ade80','#fbbf24','#4ade80','#ef4444','#4ade80','#fbbf24'];
-  STUDENTS.forEach((s, i) => {
-    const last7 = s.days.slice(-7).map(v => {
-      const c = v >= 4 ? 'var(--happy)' : v === 3 ? 'var(--neutral)' : v === 2 ? 'var(--stressed)' : 'var(--depressed)';
-      return `<span class="mood-dot-mini" style="background:${c}"></span>`;
+function buildMoodDist() {
+  const counts = {};
+  CAL_DATA.forEach(m => { if (m !== 'none') counts[m] = (counts[m] || 0) + 1; });
+  const total = Object.values(counts).reduce((a,b) => a+b, 0);
+  const el = document.getElementById('calMoodDist');
+  if (!el) return;
+  el.innerHTML = '';
+  Object.entries(counts).sort((a,b) => b[1]-a[1]).forEach(([mood, count]) => {
+    const pct = Math.round(count/total*100);
+    const m = MOODS[mood];
+    el.innerHTML += `
+      <div class="prog-item" style="margin-bottom:8px">
+        <div class="prog-meta">
+          <span style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:500;color:var(--ink-mid)">
+            <span style="width:10px;height:10px;border-radius:50%;background:${m.color};display:inline-block;flex-shrink:0"></span>${m.label}
+          </span>
+          <span style="font-size:13px;font-weight:700;font-family:var(--font-mono);color:var(--ink)">${count}d · ${pct}%</span>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" style="background:${m.color};width:${pct}%"></div></div>
+      </div>`;
+  });
+}
+
+// ══════════════════════════════════════════
+// COHORT LIST (roll numbers only)
+// ══════════════════════════════════════════
+function buildCohortList() {
+  // used indirectly; counsellor list shows filtered flagged
+}
+
+function buildCounsellorList() {
+  const list = document.getElementById('counsellorList');
+  if (!list) return;
+  list.innerHTML = '';
+  COHORT.filter(s => s.flag !== 'ok').forEach((s, i) => {
+    const pips = s.days.map(d => {
+      const c = d === 'none' ? 'var(--bg3)' : MOODS[d]?.color || 'var(--bg3)';
+      return `<span class="mpip" style="background:${c}" title="${MOODS[d]?.label || 'No entry'}"></span>`;
     }).join('');
-    const flag = s.flag === 'critical'
-      ? `<span class="alert-flag flag-red">🔴 Urgent</span>`
-      : s.flag === 'warning'
-      ? `<span class="alert-flag flag-amber">⚠ Watch</span>`
-      : `<span class="alert-flag flag-green">✓ OK</span>`;
+    const flagCls = { watch:'f-watch', critical:'f-critical', silent:'f-silent' }[s.flag] || 'f-ok';
+    const flagTxt = { watch:'⚡ Watch', critical:'🔴 Urgent', silent:'🔕 Silent' }[s.flag];
+    const avatarColor = s.flag === 'critical' ? '#e5393530' : s.flag === 'silent' ? '#c8aa8025' : '#f57c0025';
+    const textColor   = s.flag === 'critical' ? 'var(--mood-angry)' : s.flag === 'silent' ? '#7a5f30' : 'var(--mood-stressed)';
     const row = document.createElement('div');
     row.className = 'student-row';
-    row.style.animationDelay = (i * 0.05) + 's';
+    row.style.animationDelay = (i * 0.06) + 's';
     row.innerHTML = `
-      <div class="student-avatar" style="background:${colors[i]}22;color:${colors[i]}">${names[i]}</div>
-      <div style="flex:1"><div class="student-name">${s.name}</div><div class="student-class">${s.class}</div></div>
-      <div class="mood-dots-mini">${last7}</div>
-      ${flag}
-    `;
+      <div class="stu-avatar" style="background:${avatarColor};color:${textColor}">🔢</div>
+      <div style="flex:1"><div class="stu-id">${s.id}</div><div class="stu-class">${s.cls}</div></div>
+      <div class="mood-streak">${pips}</div>
+      <span class="stu-flag ${flagCls}">${flagTxt}</span>`;
     list.appendChild(row);
   });
 }
 
-function buildAlerts() {
-  const render = (container, alerts) => {
-    const el = document.getElementById(container);
-    el.innerHTML = '';
-    alerts.forEach((a, i) => {
-      const div = document.createElement('div');
-      div.className = `alert-card ${a.type}`;
-      div.style.animationDelay = (i * 0.08) + 's';
-      div.innerHTML = `
-        <span class="alert-icon">${a.icon}</span>
-        <div>
-          <div class="alert-title">${a.title}</div>
-          <div class="alert-body">${a.body}</div>
-          <div class="alert-time">${a.time}</div>
-        </div>
-      `;
-      el.appendChild(div);
-    });
-  };
-  render('criticalAlerts', CRITICAL_ALERTS);
-  render('warningAlerts', WARNING_ALERTS);
-  render('infoAlerts', INFO_ALERTS);
-}
-
-function animateProgressBars() {
-  document.querySelectorAll('.progress-fill').forEach(bar => {
-    const w = bar.style.width;
-    bar.style.width = '0';
-    setTimeout(() => { bar.style.width = w; }, 100);
+// ══════════════════════════════════════════
+// DISTRICT HEATMAP
+// ══════════════════════════════════════════
+function buildDistrictHM() {
+  const el = document.getElementById('districtHM');
+  if (!el) return;
+  const data = [
+    { name:'Kampala Central', val:18, cls:'hm-h' },
+    { name:'Wakiso',          val:12, cls:'hm-m' },
+    { name:'Mukono',          val:31, cls:'hm-c' },
+    { name:'Jinja',           val:9,  cls:'hm-l' },
+    { name:'Gulu',            val:6,  cls:'hm-g' },
+    { name:'Mbarara',         val:5,  cls:'hm-g' },
+    { name:'Masaka',          val:14, cls:'hm-m' },
+    { name:'Mbale',           val:8,  cls:'hm-l' },
+    { name:'Soroti',          val:4,  cls:'hm-g' },
+  ];
+  el.innerHTML = '';
+  data.forEach((d, i) => {
+    const cell = document.createElement('div');
+    cell.className = `hm-cell ${d.cls}`;
+    cell.style.animationDelay = (i * 0.06) + 's';
+    cell.innerHTML = `<div class="hm-val">${d.val}%</div><div class="hm-name">${d.name}</div><div class="hm-sub">distressed</div>`;
+    el.appendChild(cell);
   });
 }
 
-// ── INIT ──
-window.addEventListener('DOMContentLoaded', () => {
-  animateProgressBars();
-});
+// ══════════════════════════════════════════
+// ALERTS
+// ══════════════════════════════════════════
+const ALERTS = {
+  critical: [
+    { i:'🔴', t:'ID GHA-25-0101 — 7 consecutive distress days', b:'This roll number has logged angry/sad/depressed for 7 days straight. Pattern indicates acute distress. Counsellor contact required today. Next of kin available on file.', time:'Today · 09:12 AM' },
+    { i:'🔴', t:'ID GHA-25-0244 — Depressed + 2-day silence', b:'Following 5 depressed entries, this student has gone silent for 2 days. Combined pattern is the highest-risk signal. Immediate outreach required.', time:'Today · 08:45 AM' },
+  ],
+  warning: [
+    { i:'🟡', t:'ID GHA-25-0218 — 5 days of silence', b:'Was a consistent daily logger. No entries for 5 days. Silence from consistent loggers is always worth a gentle check-in.', time:'Yesterday' },
+    { i:'🟡', t:'S3 — Exam stress spike detected', b:'Senior 3 class shows a 28% increase in stressed/angry days this week. Exam season correlation likely. Wellness session recommended.', time:'3 days ago' },
+    { i:'🟡', t:'Monday pattern — 6 student IDs affected', b:'Six IDs consistently show distress entries on Mondays specifically. Possible home environment or re-entry stressor.', time:'This week' },
+  ],
+  info: [
+    { i:'💡', t:'Schedule a school wellbeing day', b:'Current stress trends in S3 and S4 suggest a structured wellness activity could lift scores 10–15%. Peer-led formats work best.', time:'Recommendation' },
+    { i:'💡', t:'Counsellor caseload approaching capacity', b:'Current flagged list has 9 IDs. Consider a second counsellor or champion assignment for the S3 cohort.', time:'System Insight' },
+    { i:'💡', t:'First Aid module: share with students', b:'The "First Aid & Coping" section of the tracker can be shared as a standalone resource. 4 flagged IDs have not accessed it.', time:'Recommendation' },
+  ]
+};
+
+function buildAlerts() {
+  ['critical','warning','info'].forEach(type => {
+    const el = document.getElementById('alerts-' + type);
+    if (!el) return;
+    el.innerHTML = '';
+    ALERTS[type].forEach((a, i) => {
+      const cls = type === 'critical' ? 'ac-critical' : type === 'warning' ? 'ac-warning' : 'ac-info';
+      const div = document.createElement('div');
+      div.className = `alert-card ${cls}`;
+      div.style.animationDelay = (i * 0.08) + 's';
+      div.innerHTML = `<span class="a-icon">${a.i}</span><div><div class="a-title">${a.t}</div><div class="a-body">${a.b}</div><div class="a-time">${a.time}</div></div>`;
+      el.appendChild(div);
+    });
+  });
+
+  // Counsellor alerts panel
+  const cap = document.getElementById('counsellorAlerts');
+  if (cap) {
+    cap.innerHTML = '';
+    [...ALERTS.critical, ...ALERTS.warning.slice(0,2)].forEach((a, i) => {
+      const cls = i < 2 ? 'ac-critical' : 'ac-warning';
+      const div = document.createElement('div');
+      div.className = `alert-card ${cls}`;
+      div.style.animationDelay = (i * 0.08) + 's';
+      div.innerHTML = `<span class="a-icon">${a.i}</span><div><div class="a-title">${a.t}</div><div class="a-body">${a.b}</div></div>`;
+      cap.appendChild(div);
+    });
+  }
+}
+
+// ══════════════════════════════════════════
+// PROGRESS BAR ANIMATION
+// ══════════════════════════════════════════
+function animatePBars() {
+  document.querySelectorAll('.prog-fill').forEach(bar => {
+    const w = bar.style.width;
+    bar.style.width = '0';
+    requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = w; }));
+  });
+}
+
+// ══════════════════════════════════════════
+// CHARTS
+// ══════════════════════════════════════════
+let chartInstances = {};
+
+function CF() { return { family:"'Plus Jakarta Sans', sans-serif" }; }
+function gridC() { return document.documentElement.getAttribute('data-theme') === 'dark' ? 'rgba(245,240,232,0.06)' : 'rgba(28,26,22,0.06)'; }
+function tickC() { return document.documentElement.getAttribute('data-theme') === 'dark' ? 'rgba(245,240,232,0.45)' : 'rgba(28,26,22,0.4)'; }
+
+const CHART_BASE = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } } };
+
+function initCharts() {
+  // My ring
+  chartInstances.myRing = new Chart(document.getElementById('myRing'), {
+    type:'doughnut',
+    data:{ datasets:[{ data:[74,26], backgroundColor:['#27ae60', gridC()], borderWidth:0 }] },
+    options:{ ...CHART_BASE, cutout:'78%' }
+  });
+
+  // Overview trend
+  chartInstances.ovTrend = new Chart(document.getElementById('ovTrend'), {
+    type:'line',
+    data:{
+      labels:['Jan','Feb','Mar'],
+      datasets:[{ data:[62,68,74], borderColor:'#27ae60', backgroundColor:'rgba(39,174,96,0.07)', tension:0.4, fill:true, pointRadius:5, pointBackgroundColor:'#27ae60', borderWidth:2.5 }]
+    },
+    options:{ ...CHART_BASE, scales:{ x:{ grid:{ color:gridC() }, ticks:{ color:tickC(), font:CF() } }, y:{ grid:{ color:gridC() }, ticks:{ color:tickC(), font:CF() }, min:40, max:100 } } }
+  });
+
+  // Calendar weekly chart
+  chartInstances.calWeek = new Chart(document.getElementById('calWeekChart'), {
+    type:'bar',
+    data:{
+      labels:['Week 1','Week 2','Week 3','Week 4'],
+      datasets:[
+        { label:'Well days',     data:[5,4,4,5], backgroundColor:'rgba(39,174,96,0.65)', borderRadius:5, borderSkipped:false },
+        { label:'Distress days', data:[1,3,2,1], backgroundColor:'rgba(229,57,53,0.5)',  borderRadius:5, borderSkipped:false },
+      ]
+    },
+    options:{ ...CHART_BASE,
+      plugins:{ legend:{ display:true, labels:{ color:tickC(), font:{ size:11, ...CF() }, boxWidth:9, boxHeight:9, usePointStyle:true } } },
+      scales:{ x:{ grid:{ display:false }, ticks:{ color:tickC(), font:CF() } }, y:{ grid:{ color:gridC() }, ticks:{ color:tickC(), font:CF() }, max:7 } }
+    }
+  });
+
+  // Cohort distribution donut
+  chartInstances.cohortDist = new Chart(document.getElementById('cohortDist'), {
+    type:'doughnut',
+    data:{
+      labels:['Happy','Positive','Neutral','Stressed','Angry','Sad','Depressed'],
+      datasets:[{ data:[28,18,22,14,8,6,4], backgroundColor:['#f5c518','#27ae60','#64b5f6','#f57c00','#e53935','#e91e8c','#263238'], borderWidth:2, borderColor:'var(--surface)', hoverOffset:7 }]
+    },
+    options:{ ...CHART_BASE, cutout:'60%' }
+  });
+
+  // Cohort ring
+  chartInstances.cohortRing = new Chart(document.getElementById('cohortRing'), {
+    type:'doughnut',
+    data:{ datasets:[{ data:[68,32], backgroundColor:['#f57c00', gridC()], borderWidth:0 }] },
+    options:{ ...CHART_BASE, cutout:'78%' }
+  });
+
+  // Class breakdown
+  chartInstances.classChart = new Chart(document.getElementById('classChart'), {
+    type:'bar',
+    data:{
+      labels:['S1','S2','S3','S4','S5','S6'],
+      datasets:[{ data:[10,13,28,22,15,12], backgroundColor:['rgba(39,174,96,0.6)','rgba(39,174,96,0.6)','rgba(229,57,53,0.6)','rgba(245,124,0,0.6)','rgba(100,181,246,0.6)','rgba(39,174,96,0.6)'], borderRadius:5, borderSkipped:false }]
+    },
+    options:{ ...CHART_BASE, scales:{ x:{ grid:{ display:false }, ticks:{ color:tickC(), font:{ size:11, ...CF() } } }, y:{ grid:{ color:gridC() }, ticks:{ color:tickC(), font:CF() } } } }
+  });
+
+  // Counsellor trend
+  chartInstances.counsellorTrend = new Chart(document.getElementById('counsellorTrend'), {
+    type:'line',
+    data:{
+      labels:['Week 1','Week 2','Week 3','Week 4'],
+      datasets:[
+        { label:'S3 Wellbeing', data:[72,68,62,60], borderColor:'#e53935', backgroundColor:'rgba(229,57,53,0.06)', tension:0.4, fill:true, pointRadius:4, pointBackgroundColor:'#e53935', borderWidth:2 },
+        { label:'School Avg',   data:[70,69,68,68], borderColor:'#27ae60', backgroundColor:'rgba(39,174,96,0.05)', tension:0.4, fill:true, pointRadius:4, pointBackgroundColor:'#27ae60', borderWidth:2 },
+      ]
+    },
+    options:{ ...CHART_BASE,
+      plugins:{ legend:{ display:true, labels:{ color:tickC(), font:{ size:11, ...CF() }, boxWidth:9, boxHeight:9, usePointStyle:true } } },
+      scales:{ x:{ grid:{ color:gridC() }, ticks:{ color:tickC(), font:CF() } }, y:{ grid:{ color:gridC() }, ticks:{ color:tickC(), font:CF() }, min:40, max:100 } }
+    }
+  });
+}
 </script>
 </body>
 </html>
